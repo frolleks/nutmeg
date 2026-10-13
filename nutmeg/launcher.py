@@ -132,6 +132,9 @@ class Launcher:
         arch = rosemary.build_arch(self.config)
         prefix = self.config.prefix()
         self.log.write(f"rosemary: {binary}; build: {arch}; prefix: {prefix}")
+        in_bottle = rosemary.bottle(self.config)
+        if in_bottle is not None:
+            self.log.write(f"the prefix is the Butter bottle {in_bottle.name}'s; using its settings")
         self.frontend.progress(None)
         with install_lock(self.cancel, self._waiting):
             roblox.remove_leftovers()
@@ -262,11 +265,13 @@ class Launcher:
                 + ", ".join(map(str, left))
                 + ")."
             )
-        if self.config.process_server:
+        if self.config.process_server and rosemary.bottle(self.config) is None:
             # As Butter's Stop button does: the prefix's process server goes
             # with the client instead of lingering (ROSEMARY_SERVER_LINGER)
             # until it times out. A status other than 0 usually means that no
             # server was running, which is not a reason to stop the launch.
+            # Never in a Butter bottle's prefix: the server ends every guest
+            # still connected, so it would close the bottle's other programs.
             code = rosemary.stop_server(
                 binary, self.config, lambda line: self.log.write(f"rosemary: {line}"), self.cancel
             )
@@ -283,7 +288,7 @@ class Launcher:
             cwd = Path.home()
         self.log.write("running: " + redact(shlex.join(argv)))
         for name in sorted(env):
-            if name.startswith("ROSEMARY_") or name in ("SDL_VIDEO_DRIVER", "SDL_VIDEODRIVER"):
+            if name.startswith("ROSEMARY_") or name in ("SDL_VIDEO_DRIVER", "SDL_VIDEODRIVER", "VK_DRIVER_FILES"):
                 self.log.write(f"  {name}={env[name]}")
         self.frontend.status("Starting Roblox…", "")
         self.frontend.progress(None)

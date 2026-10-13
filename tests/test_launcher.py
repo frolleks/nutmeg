@@ -124,6 +124,25 @@ class LaunchTests(Sandbox):
         self.assertEqual(stopped, f"{paths.default_prefix()}\n")
         self.assertIn("rosemary server --stop exited with status 1", second.log.read_text())
 
+    def test_in_a_butter_bottle_the_bottles_settings_apply(self):
+        prefix = self.butter_bottle(
+            "roblox", 'name = "Roblox"\ndisable_metal = true\nswap_interval = "vsync"\n\n[env]\nFOO = "bar"\n'
+        )
+        self.config.prefix_path = str(prefix)
+        self.config.swap_interval = "0"
+        self.config.dead_flags = True
+        first, _, _ = self.launch()
+        env = self.record()["env"]
+        self.assertEqual(env["ROSEMARY_PREFIX"], str(prefix))
+        self.assertEqual(env["ROSEMARY_SWAP_INTERVAL"], "1")
+        self.assertNotIn("ROSEMARY_DEAD_FLAGS", env)
+        log = self.wait_for_text(first.log, "guest output")
+        self.assertIn("VK_DRIVER_FILES=/dev/null", log)
+        self.assertIn("using its settings", log)
+        # Closing the first Roblox leaves the bottle's process server alone.
+        self.launch()
+        self.assertFalse(Path(os.environ["FAKE_ROSEMARY_RECORD"] + ".server").exists())
+
     def test_no_server_to_stop_when_it_is_off(self):
         self.config.process_server = False
         self.launch()

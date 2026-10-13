@@ -38,8 +38,24 @@ def host_arch() -> str | None:
     return None
 
 
+def bottle(config: Config) -> butter.Bottle | None:
+    """The Butter bottle whose prefix Roblox runs in, if it is one. Its
+    settings then take the place of nutmeg's runtime settings."""
+    return butter.bottle_for_prefix(config.prefix())
+
+
+def engine(config: Config) -> tuple[str, str]:
+    """The execution mode, `auto`, `native` or `emulated`, and where it is
+    chosen: nutmeg's settings, or the Butter bottle's."""
+    found = bottle(config)
+    if found is not None:
+        return found.engine(), f"the {found.name} bottle's settings in Butter"
+    return config.engine, "Settings"
+
+
 def build_arch(config: Config) -> str:
     """Which Roblox build to install."""
+    mode, where = engine(config)
     host = host_arch()
     if host is None:
         raise NutmegError(
@@ -53,16 +69,16 @@ def build_arch(config: Config) -> str:
             "emulate x86_64. Choose another build in Settings.",
             settings=True,
         )
-    if config.engine == "native" and wanted != host:
+    if mode == "native" and wanted != host:
         raise NutmegError(
             f"The {wanted} build cannot run natively on this {host} machine. "
-            "Choose another build or execution mode in Settings.",
+            f"Choose another build in Settings or another execution mode in {where}.",
             settings=True,
         )
-    if config.engine == "emulated" and wanted != "x86_64":
+    if mode == "emulated" and wanted != "x86_64":
         raise NutmegError(
-            "rosemary can only emulate the x86_64 build. Choose the x86_64 build or "
-            "another execution mode in Settings.",
+            "rosemary can only emulate the x86_64 build. Choose the x86_64 build in "
+            f"Settings or another execution mode in {where}.",
             settings=True,
         )
     return wanted
@@ -224,11 +240,18 @@ def run_env(config: Config, base: dict[str, str] | None = None) -> dict[str, str
 
     Every variable a setting controls is removed from the inherited
     environment before the settings are applied, so a value exported in a
-    shell cannot silently override what the settings say.
+    shell cannot silently override what the settings say. In a Butter
+    bottle's prefix, the bottle's settings and variables are applied in place
+    of nutmeg's, as Butter applies them, so that nutmeg does not override
+    what the bottle is set to.
     """
     env = dict(os.environ if base is None else base)
     for name in MANAGED_ENV:
         env.pop(name, None)
+    found = bottle(config)
+    if found is not None:
+        env.update(found.environment())
+        return env
     env.update(config.extra_env)
     env["ROSEMARY_PREFIX"] = str(config.prefix())
     if config.swap_interval:
@@ -262,9 +285,10 @@ def run_argv(rosemary: Path, config: Config, app: Path, url: str | None) -> list
     """The command line that starts Roblox. `app` is the Roblox.app folder;
     rosemary finds the executable inside it."""
     argv = [str(rosemary), "run"]
-    if config.engine == "native":
+    mode, _where = engine(config)
+    if mode == "native":
         argv.append("--native")
-    elif config.engine == "emulated":
+    elif mode == "emulated":
         argv.append("--emulated")
     argv.append(str(app))
     if url is not None:

@@ -107,7 +107,9 @@ Each launch goes through these steps.
    one instance at a time (`LSMultipleInstancesProhibited` in its Info.plist).
    After closing it, nutmeg runs `rosemary server --stop` to stop the
    prefix's process server, as Butter's Stop button does, unless the Process
-   server setting is off.
+   server setting is off or the prefix is a Butter bottle's. In a bottle's
+   prefix the server is left alone, because stopping it ends every program
+   still running in the bottle.
 5. It removes older builds that no Roblox process is using.
 6. It runs
 
@@ -150,9 +152,31 @@ run outside the Flatpak too. A runner the Flatpak compiled from source was
 linked against the Flatpak's runtime and may not start outside it.
 
 The Prefix setting lists Butter's bottles next to nutmeg's own prefix. In a
-bottle's prefix, Roblox shares its files with the bottle's other programs, but
-it runs with nutmeg's settings, not the bottle's. Butter does not start
-Roblox, so Roblox does not appear in Butter's Process Manager.
+bottle's prefix, Roblox shares its files with the bottle's other programs and
+runs with the bottle's settings, read from its `bottle.toml` at each launch.
+nutmeg turns them into variables the way Butter does for a program it starts
+in the bottle:
+
+| `bottle.toml` key | Variable |
+| ----------------- | -------- |
+| `decorations` | `ROSEMARY_DECORATIONS` |
+| `menu` | `ROSEMARY_MENU` |
+| `swap_interval` | `ROSEMARY_SWAP_INTERVAL` |
+| `prefix_home` | `ROSEMARY_PREFIX_HOME` |
+| `steam = false` | `ROSEMARY_STEAM=0` |
+| `menu_ctrl = false` | `ROSEMARY_MENU_CTRL=0` |
+| `confine_pointer = true` | `ROSEMARY_CONFINE_POINTER=1` |
+| `disable_metal = true` | `VK_DRIVER_FILES=/dev/null` |
+| `process_server = false` | `ROSEMARY_SERVER=off` |
+| `dead_flags`, `call_return`, `strict_imports` | `ROSEMARY_DEAD_FLAGS`, `ROSEMARY_CALL_RETURN`, `ROSEMARY_STRICT_IMPORTS` |
+| `[env]` | set as they are, after the above, so they win |
+
+The bottle's `backend` also decides `rosemary run --native` or
+`--emulated`. nutmeg's own runtime, display and emulation settings, its extra
+environment variables and its Execution setting are not used in a bottle's
+prefix; the settings window greys them out. nutmeg's Build setting and
+FastFlags still apply, because Butter has nothing for them. Butter does not
+start Roblox, so Roblox does not appear in Butter's Process Manager.
 
 ## Settings
 
@@ -177,7 +201,8 @@ options set rosemary's environment variables, which rosemary's
 | Native call return | `ROSEMARY_CALL_RETURN` |
 | Execution | `rosemary run --native` or `--emulated` |
 
-A setting left at "Default" leaves its variable unset, and nutmeg removes
+In a Butter bottle's prefix, the bottle's settings take the place of these;
+see above. A setting left at "Default" leaves its variable unset, and nutmeg removes
 these variables from the environment it inherits, so the settings are the only
 place they come from. Any other variable can be added under "Extra environment
 variables". A settings file from an older nutmeg that sets

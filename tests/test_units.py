@@ -22,6 +22,41 @@ from nutmeg.errors import NutmegError
 
 from helpers import Sandbox, fat, macho, roblox_zip
 
+# A bottle.toml shaped as Butter's toml::to_string_pretty writes one.
+BOTTLE_TOML = """\
+name = "Roblox"
+runner = "rosemary-v0-3-0-official"
+created = 1760000000
+arch = "host"
+system_files = "repair"
+backend = "emulated"
+decorations = "server"
+menu = "hidden"
+swap_interval = "adaptive"
+prefix_home = "prefix"
+steam = false
+menu_ctrl = true
+confine_pointer = false
+disable_metal = true
+process_server = true
+dead_flags = true
+call_return = false
+strict_imports = false
+
+[env]
+FOO = "bar"
+ROSEMARY_STEAM = "1"
+
+[[programs]]
+name = "Tool"
+path = "/x/tool"
+args = [
+    "[not a table]",
+    "--flag",
+]
+backend = "native"
+"""
+
 
 class ProtocolTests(unittest.TestCase):
     def test_accepts_both_schemes(self):
@@ -366,6 +401,37 @@ class RosemaryTests(Sandbox):
             },
         )
 
+    def test_a_butter_bottle_prefix_uses_the_bottles_settings(self):
+        prefix = self.butter_bottle("roblox", BOTTLE_TOML)
+        config = Config(
+            prefix_path=str(prefix),
+            engine="native",
+            swap_interval="1",
+            decorations="client",
+            video_driver="x11",
+            extra_env={"RUST_LOG": "debug"},
+        )
+        env = rosemary.run_env(config, {"PATH": "/bin", "ROSEMARY_MENU": "strip"})
+        self.assertEqual(env["PATH"], "/bin")
+        self.assertEqual(env["ROSEMARY_PREFIX"], str(prefix))
+        self.assertEqual(env["ROSEMARY_SWAP_INTERVAL"], "-1")
+        self.assertEqual(env["ROSEMARY_DECORATIONS"], "server")
+        self.assertEqual(env["ROSEMARY_MENU"], "none")
+        self.assertEqual(env["VK_DRIVER_FILES"], "/dev/null")
+        for name in ("SDL_VIDEO_DRIVER", "RUST_LOG"):
+            self.assertNotIn(name, env)
+        app = Path("/data/versions/v/Roblox.app")
+        self.assertEqual(
+            rosemary.run_argv(Path("/bin/rosemary"), config, app, None),
+            ["/bin/rosemary", "run", "--emulated", str(app)],
+        )
+        with mock.patch.object(rosemary, "host_arch", return_value="arm64"):
+            # The bottle emulates, so the arm64 build is refused, and the
+            # message says where execution is chosen.
+            with self.assertRaisesRegex(NutmegError, "the Roblox bottle's settings in Butter"):
+                rosemary.build_arch(config)
+            self.assertEqual(rosemary.build_arch(Config(prefix_path=str(prefix), architecture="x86_64")), "x86_64")
+
     def test_command_line(self):
         program = Path("/data/versions/v/Roblox.app")
         tool = Path("/bin/rosemary")
@@ -451,14 +517,24 @@ class ButterTests(Sandbox):
         path.write_text(
             'name = "Rosemary \\"dev\\" \\u00e9"\n'
             "executable = 'C:\\odd\\path' # comment\n"
-            "installed = 1760000000\n"
+            "installed = 1_760_000_000\n"
+            'notes = """\n'
+            "[not a table]\n"
+            '"""\n'
             "\n"
             "[env]\n"
-            'name = "from a table"\n'
+            '"QUOTED" = "from a table"\n'
+            "[[programs]]\n"
+            'name = "skipped"\n'
         )
         self.assertEqual(
             butter.read_manifest(path),
-            {"name": 'Rosemary "dev" \u00e9', "executable": "C:\\odd\\path"},
+            {
+                "name": 'Rosemary "dev" \u00e9',
+                "executable": "C:\\odd\\path",
+                "installed": 1760000000,
+                "env": {"QUOTED": "from a table"},
+            },
         )
         self.assertEqual(butter.read_manifest(self.root / "missing.toml"), {})
 
@@ -489,6 +565,33 @@ class ButterTests(Sandbox):
             butter.runner_directory(found[1].executable), self.root / "data/butter/runners/rosemary-v0-9-0"
         )
         self.assertIsNone(butter.runner_directory(self.root / "bin/rosemary"))
+
+    def test_bottle_settings_become_butters_environment(self):
+        prefix = self.butter_bottle("roblox", 'name = "Roblox"\n')
+        bottle = butter.bottle_for_prefix(prefix)
+        # A new bottle: Butter sets only the prefix.
+        self.assertEqual(bottle.environment(), {"ROSEMARY_PREFIX": str(prefix)})
+        self.assertEqual(bottle.engine(), "auto")
+        (prefix.parent / "bottle.toml").write_text(BOTTLE_TOML)
+        bottle = butter.bottle_for_prefix(prefix)
+        self.assertEqual(
+            bottle.environment(),
+            {
+                "ROSEMARY_PREFIX": str(prefix),
+                "ROSEMARY_DECORATIONS": "server",
+                "ROSEMARY_MENU": "none",
+                "ROSEMARY_SWAP_INTERVAL": "-1",
+                "VK_DRIVER_FILES": "/dev/null",
+                "ROSEMARY_DEAD_FLAGS": "1",
+                # The bottle's own variables win, as in Butter.
+                "ROSEMARY_STEAM": "1",
+                "FOO": "bar",
+            },
+        )
+        self.assertEqual(bottle.engine(), "emulated")
+        self.assertEqual(butter.bottle_for_prefix(Path(str(prefix) + "/")), bottle)
+        self.assertIsNone(butter.bottle_for_prefix(paths.default_prefix()))
+        self.assertIsNone(butter.bottle_for_prefix(prefix.parent))
 
     def test_bottles(self):
         prefix = self.butter_bottle("roblox", 'name = "Roblox"\nrunner = "rosemary-v1"\n\n[env]\n')

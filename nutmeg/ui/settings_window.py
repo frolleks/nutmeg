@@ -189,6 +189,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self._closing = False
         self._busy = False
         self._chooser = None
+        self._own_groups: list[Gtk.Widget] = []
         problem = None
         try:
             self._saved = config_module.load()
@@ -252,6 +253,8 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self._engine = Choice(
             [("auto", "Automatic"), ("native", "Native"), ("emulated", "Emulated")]
         )
+        self._engine_note = _label("", dim=True)
+        self._engine_note.set_visible(False)
         return _page(
             _group("Installed", [_row("Version", self._installed)]),
             _buttons(self._launch_button, self._update_button, self._reinstall_button),
@@ -272,6 +275,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
                     ),
                 ],
             ),
+            self._engine_note,
         )
 
     def _path_entry(self, placeholder: str, folder: bool, title: str) -> tuple[Gtk.Entry, Gtk.Widget]:
@@ -310,6 +314,9 @@ class SettingsWindow(Gtk.ApplicationWindow):
         prefix_actions = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         _margins(prefix_actions, 8)
         prefix_actions.append(self._prefix_status)
+        self._bottle_note = _label("")
+        self._bottle_note.set_visible(False)
+        prefix_actions.append(self._bottle_note)
         prefix_actions.append(_buttons(self._base_button, self._repair_button))
 
         self._swap = Choice(
@@ -357,10 +364,15 @@ class SettingsWindow(Gtk.ApplicationWindow):
                         "Prefix",
                         self._prefix_choice.widget,
                         "The rosemary prefix Roblox runs in (ROSEMARY_PREFIX). In a Butter "
-                        "bottle's prefix, Roblox shares files with that bottle's programs, and "
-                        "the settings here apply to it, not the bottle's.",
+                        "bottle's prefix, Roblox shares files with that bottle's programs and "
+                        "runs with the bottle's settings from Butter.",
                     ),
                     prefix_actions,
+                ],
+            ),
+            self._own_group(
+                "Prefix options",
+                [
                     _row(
                         "Home folder",
                         self._prefix_home.widget,
@@ -376,7 +388,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
                     ),
                 ],
             ),
-            _group(
+            self._own_group(
                 "Display",
                 [
                     _row(
@@ -401,7 +413,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
                     ),
                 ],
             ),
-            _group(
+            self._own_group(
                 "Runtime",
                 [
                     _row("Title bar", self._decorations.widget, "ROSEMARY_DECORATIONS"),
@@ -423,7 +435,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
                 ],
                 "These set rosemary's environment variables, described in its docs/usage.md.",
             ),
-            _group(
+            self._own_group(
                 "Emulation",
                 [
                     _row(
@@ -436,12 +448,19 @@ class SettingsWindow(Gtk.ApplicationWindow):
                 ],
                 "Only used when rosemary recompiles the x86_64 build.",
             ),
-            _group(
+            self._own_group(
                 "Extra environment variables",
                 [env_box],
                 "One NAME=value per line, passed to rosemary and Roblox. Lines starting with # are ignored.",
             ),
         )
+
+    def _own_group(self, title: str, rows: list[Gtk.Widget], description: Optional[str] = None) -> Gtk.Widget:
+        """A group of nutmeg's own runtime settings, which a Butter bottle's
+        settings replace when Roblox runs in its prefix."""
+        group = _group(title, rows, description)
+        self._own_groups.append(group)
+        return group
 
     def _flags_page(self) -> Gtk.Widget:
         self._flags = FlagEditor()
@@ -625,6 +644,23 @@ class SettingsWindow(Gtk.ApplicationWindow):
             base = rosemary.prefix_base_arch(prefix)
             text = f"Created, with the {base} Darwin base." if base else "Created, without a Darwin base."
         self._prefix_status.set_text(text)
+        found = butter.bottle_for_prefix(prefix) if prefix.is_absolute() else None
+        for group in self._own_groups:
+            group.set_sensitive(found is None)
+        self._engine.widget.set_sensitive(found is None)
+        if found is not None:
+            self._bottle_note.set_text(
+                f"Roblox runs with the {found.name} bottle's settings: its title bar, menus, "
+                "VSync, Metal, process server and emulation options, its environment "
+                "variables, and its execution backend. Change them in Butter. nutmeg's "
+                "own settings below are kept for other prefixes but not used here."
+            )
+            self._engine_note.set_text(
+                f"Execution follows the {found.name} bottle's backend in Butter, because "
+                "Roblox runs in that bottle's prefix."
+            )
+        self._bottle_note.set_visible(found is not None)
+        self._engine_note.set_visible(found is not None)
         self._base_button.set_sensitive(not self._busy and prefix.is_absolute())
         self._repair_button.set_sensitive(not self._busy and base is not None)
 

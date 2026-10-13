@@ -196,6 +196,16 @@ class WindowTests(Sandbox):
         self.assertEqual((saved.metal_presentation_mode, saved.screen_refresh_rate), ("fifo", "75"))
         self.assertEqual(saved.video_driver, "x11")
         self.assertIn("Created", window._prefix_status.get_text())
+        # The bottle's settings replace nutmeg's runtime settings, so those are greyed out.
+        self.assertTrue(window._bottle_note.get_visible())
+        self.assertIn("Roblox bottle's settings", window._bottle_note.get_text())
+        self.assertFalse(window._engine.widget.get_sensitive())
+        self.assertFalse(window._swap.widget.is_sensitive())
+        screenshot(window, "settings-bottle")
+        prefix_choice.dropdown.set_selected(0)
+        self.assertFalse(window._bottle_note.get_visible())
+        self.assertTrue(window._swap.widget.is_sensitive())
+        prefix_choice.dropdown.set_selected(1)
 
         # Any other program goes in the entry under "Another program…".
         rosemary_choice.set("/opt/rosemary/target/release/rosemary")
