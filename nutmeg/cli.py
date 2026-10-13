@@ -137,6 +137,15 @@ def _parser() -> argparse.ArgumentParser:
         "install-desktop", help="add menu entries and open roblox-player: and roblox: links with nutmeg"
     )
     commands.add_parser("uninstall-desktop", help="remove the menu entries")
+    command = commands.add_parser(
+        "discord-presence",
+        help="show the game Roblox is in on Discord until it closes (started by launch)",
+    )
+    command.add_argument("--prefix", required=True, help="the rosemary prefix Roblox runs in")
+    command.add_argument(
+        "--since", type=float, default=0.0, help="only follow logs changed after this time (seconds since the epoch)"
+    )
+    command.add_argument("--log", help="a log file to add lines to")
     return parser
 
 
@@ -157,6 +166,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0
     if command == "settings":
         return _gui("settings", None)
+    if command == "discord-presence":
+        from pathlib import Path
+
+        from . import presence
+
+        return presence.run(Path(args.prefix), args.since, Path(args.log) if args.log else None)
     url = getattr(args, "url", None)
     if url is not None:
         try:

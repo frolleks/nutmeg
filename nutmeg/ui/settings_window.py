@@ -487,6 +487,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
         install.connect("clicked", lambda _b: self._install_desktop())
         remove = Gtk.Button(label="Remove")
         remove.connect("clicked", lambda _b: self._uninstall_desktop())
+        self._discord = Gtk.Switch()
         logs = Gtk.Button(label="Open Logs Folder")
         logs.connect("clicked", lambda _b: self._open_logs())
         rows = [_row("Menu entries", self._entries_state)]
@@ -502,6 +503,19 @@ class SettingsWindow(Gtk.ApplicationWindow):
                 "Roblox through nutmeg.",
             ),
             _buttons(install, remove),
+            _group(
+                "Discord",
+                [
+                    _row(
+                        "Show the game you are playing on Discord",
+                        self._discord,
+                        "nutmeg follows Roblox's log and sets your activity in the Discord app "
+                        "on this computer: the game's name, creator and icon, how long you have "
+                        "been playing, and a button to the game's page. It is visible wherever "
+                        "Discord shows your activity.",
+                    ),
+                ],
+            ),
             _group(
                 "Logs",
                 [_row("Folder", _label(str(paths.logs_dir())))],
@@ -530,6 +544,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self._presentation.set(config.metal_presentation_mode)
         self._refresh_rate.set_text(config.screen_refresh_rate)
         self._video_driver.set(config.video_driver)
+        self._discord.set_active(config.discord_presence)
         self._env_view.get_buffer().set_text(format_env(config.extra_env))
         self._flags.set_flags(config.fast_flags)
 
@@ -551,6 +566,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
             metal_presentation_mode=self._presentation.get(),
             screen_refresh_rate=self._refresh_rate.get_text().strip(),
             video_driver=self._video_driver.get(),
+            discord_presence=self._discord.get_active(),
             extra_env=parse_env(_text_of(self._env_view)),
             fast_flags=self._flags.get_flags(),
         )

@@ -143,6 +143,17 @@ class LaunchTests(Sandbox):
         self.launch()
         self.assertFalse(Path(os.environ["FAKE_ROSEMARY_RECORD"] + ".server").exists())
 
+    def test_discord_presence_is_started_when_on(self):
+        launched, _, _ = self.launch()
+        self.presence_helper.assert_called_once()
+        prefix, since, log = self.presence_helper.call_args.args
+        self.assertEqual((prefix, log), (paths.default_prefix(), launched.log))
+        self.assertLessEqual(since, time.time())
+        self.presence_helper.reset_mock()
+        self.config.discord_presence = False
+        self.launch()
+        self.presence_helper.assert_not_called()
+
     def test_no_server_to_stop_when_it_is_off(self):
         self.config.process_server = False
         self.launch()

@@ -9,6 +9,7 @@ import json
 import os
 import plistlib
 import shutil
+import socket
 import stat
 import struct
 import sys
@@ -20,7 +21,9 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from nutmeg import roblox
+from unittest import mock
+
+from nutmeg import presence, roblox
 
 
 def macho(arch: str) -> bytes:
@@ -150,6 +153,68 @@ FAKE_ROSEMARY = textwrap.dedent(
 )
 
 
+class FakeDiscord:
+    """Listens where the Discord app does, in XDG_RUNTIME_DIR, answers the
+    handshake with READY and each SET_ACTIVITY with its nonce, and records
+    the activities."""
+
+    def __init__(self, runtime_dir: Path) -> None:
+        self.path = runtime_dir / "discord-ipc-0"
+        self.activities: list = []
+        self.client_ids: list[str] = []
+        self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._server.bind(str(self.path))
+        self._server.listen(4)
+        threading.Thread(target=self._serve, daemon=True).start()
+
+    def _serve(self) -> None:
+        while True:
+            try:
+                connection, _ = self._server.accept()
+            except OSError:
+                return
+            threading.Thread(target=self._talk, args=(connection,), daemon=True).start()
+
+    @staticmethod
+    def _read(connection: socket.socket):
+        header = b""
+        while len(header) < 8:
+            chunk = connection.recv(8 - len(header))
+            if not chunk:
+                return None
+            header += chunk
+        op, length = struct.unpack("<II", header)
+        body = b""
+        while len(body) < length:
+            body += connection.recv(length - len(body))
+        return op, json.loads(body)
+
+    @staticmethod
+    def _write(connection: socket.socket, op: int, payload: dict) -> None:
+        data = json.dumps(payload).encode()
+        connection.sendall(struct.pack("<II", op, len(data)) + data)
+
+    def _talk(self, connection: socket.socket) -> None:
+        with connection:
+            while True:
+                try:
+                    message = self._read(connection)
+                except OSError:
+                    return
+                if message is None:
+                    return
+                op, payload = message
+                if op == 0:
+                    self.client_ids.append(payload["client_id"])
+                    self._write(connection, 1, {"cmd": "DISPATCH", "evt": "READY", "data": {"v": 1}})
+                elif payload.get("cmd") == "SET_ACTIVITY":
+                    self.activities.append(payload["args"]["activity"])
+                    self._write(connection, 1, {"cmd": "SET_ACTIVITY", "evt": None, "nonce": payload["nonce"]})
+
+    def close(self) -> None:
+        self._server.close()
+
+
 class Sandbox(unittest.TestCase):
     """Points every XDG directory and HOME at a scratch directory."""
 
@@ -164,9 +229,15 @@ class Sandbox(unittest.TestCase):
             ("XDG_STATE_HOME", "state"),
         ):
             os.environ[variable] = str(self.root / name)
+        os.environ["XDG_RUNTIME_DIR"] = str(self.root / "run")
+        (self.root / "run").mkdir()
         for name in ("ROSEMARY_PREFIX", "ROSEMARY_DEAD_FLAGS", "FAKE_ROSEMARY_EXIT", "FAKE_ROSEMARY_PREFIX_FAIL"):
             os.environ.pop(name, None)
         (self.root / "home").mkdir()
+        # A launch would otherwise start a real `nutmeg discord-presence`.
+        patcher = mock.patch.object(presence, "start_helper")
+        self.presence_helper = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self) -> None:
         os.environ.clear()

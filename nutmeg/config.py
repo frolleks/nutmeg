@@ -108,6 +108,7 @@ class Config:
     metal_presentation_mode: str = ""
     screen_refresh_rate: str = ""
     video_driver: str = ""
+    discord_presence: bool = True
     extra_env: dict = field(default_factory=dict)
     fast_flags: dict = field(default_factory=dict)
 
@@ -146,7 +147,7 @@ class Config:
         for name, allowed in choices.items():
             if getattr(self, name) not in allowed:
                 problems.append(f"{name} must be one of {', '.join(map(repr, allowed))}")
-        for name in ("menu_ctrl", "confine_pointer", "dead_flags", "call_return", "process_server"):
+        for name in ("menu_ctrl", "confine_pointer", "dead_flags", "call_return", "process_server", "discord_presence"):
             if not isinstance(getattr(self, name), bool):
                 problems.append(f"{name} must be true or false")
         rate = self.screen_refresh_rate

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterator, Optional, Protocol
 
-from . import __version__, paths, processes, roblox, rosemary
+from . import __version__, paths, presence, processes, roblox, rosemary
 from .config import Config
 from .errors import Cancelled, NutmegError
 from .protocol import redact
@@ -292,6 +292,7 @@ class Launcher:
                 self.log.write(f"  {name}={env[name]}")
         self.frontend.status("Starting Roblox…", "")
         self.frontend.progress(None)
+        started = time.time()
         try:
             process = subprocess.Popen(
                 argv,
@@ -305,6 +306,13 @@ class Launcher:
         except OSError as e:
             raise NutmegError(f"Could not start {binary}: {e.strerror}", settings=True) from e
         self.log.write(f"started process {process.pid}")
+        if self.config.discord_presence:
+            try:
+                helper = presence.start_helper(self.config.prefix(), started, self.log.path)
+            except (OSError, NutmegError) as e:
+                self.log.write(f"could not start the Discord presence: {e}")
+            else:
+                self.log.write(f"showing the game on Discord (process {helper.pid})")
         return Launched(process=process, log=self.log.path, build=build)
 
     def settle(self, launched: Launched) -> None:

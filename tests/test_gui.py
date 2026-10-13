@@ -187,6 +187,7 @@ class WindowTests(Sandbox):
         window._presentation.set("fifo")
         window._refresh_rate.set_text("75")
         window._video_driver.set("x11")
+        window._discord.set_active(False)
         screenshot(window, "settings-butter")
         click(window, "Save")
         saved = config_module.load()
@@ -195,6 +196,7 @@ class WindowTests(Sandbox):
         self.assertFalse(saved.process_server)
         self.assertEqual((saved.metal_presentation_mode, saved.screen_refresh_rate), ("fifo", "75"))
         self.assertEqual(saved.video_driver, "x11")
+        self.assertFalse(saved.discord_presence)
         self.assertIn("Created", window._prefix_status.get_text())
         # The bottle's settings replace nutmeg's runtime settings, so those are greyed out.
         self.assertTrue(window._bottle_note.get_visible())

@@ -81,6 +81,8 @@ nutmeg launch [LINK]        install or update Roblox, then start it
 nutmeg update               install or update Roblox without starting it
 nutmeg install-desktop      add the menu entries and the link handler
 nutmeg uninstall-desktop    remove the menu entries
+nutmeg discord-presence     show the game on Discord until Roblox closes
+                            (started by launch; see Discord below)
 ```
 
 `launch` and `update` show a progress window. With `--no-gui` they report on
@@ -218,6 +220,37 @@ sets SDL's `SDL_VIDEO_DRIVER`. nutmeg also removes the older spelling,
 compositor supports the `wp_fifo_v1` protocol and X11 otherwise, which on a
 Wayland desktop means XWayland. Choosing Wayland outside a Wayland session
 leaves rosemary unable to open a window.
+
+## Discord
+
+When "Show the game you are playing on Discord" is on (the default, on the
+Integration page), each launch also starts `nutmeg discord-presence`, which
+runs until Roblox has been closed for 10 seconds. It reads the new lines of
+the client's logs in `Library/Logs/Roblox` in the guest's home folder: under
+the prefix's `root/Users/`, or in your real home folder when the home folder
+setting is "Your home folder". It looks for these lines, which the macOS
+client writes:
+
+```
+[FLog::Output] ! Joining game '<job id>' place <place id> at <address>
+[FLog::SingleSurfaceApp] leaveUGCGameInternal
+[FLog::Network] Connection lost
+```
+
+On joining, it looks the place up with Roblox's web API
+(`apis.roblox.com/universes/v1/places/<place>/universe`,
+`games.roblox.com/v1/games` and `thumbnails.roblox.com/v1/games/icons`) and
+sets a Discord activity for application 826716557051691068: the game's name,
+"by" its creator, the game's icon, the time since joining, and a "See game
+page" button that opens `https://www.roblox.com/games/<place id>`. On leaving
+or losing the connection, the activity is cleared. Teleporting to another
+place writes a new joining line, so the activity follows.
+
+The activity goes through the Discord app's IPC socket, `discord-ipc-<n>` in
+`XDG_RUNTIME_DIR`, or in the folder the Discord Flatpak or Snap, or the Vesktop
+Flatpak, uses there. If Discord is not running, nutmeg tries again every 15
+seconds. Only one `discord-presence` runs at a time; a launch while one is
+running leaves it to follow the new Roblox. Its own lines go to the launch log.
 
 ## FastFlags
 
