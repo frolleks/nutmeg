@@ -151,6 +151,7 @@ class Config:
     metal_presentation_mode: str = ""
     screen_refresh_rate: str = ""
     video_driver: str = ""
+    force_opengl: bool = False
     discord_presence: bool = True
     close_on_leave: bool = False
     auto_update: bool = True
@@ -201,6 +202,7 @@ class Config:
             "dead_flags",
             "call_return",
             "process_server",
+            "force_opengl",
             "discord_presence",
             "close_on_leave",
             "auto_update",

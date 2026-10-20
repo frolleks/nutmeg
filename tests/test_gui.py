@@ -184,6 +184,7 @@ class WindowTests(Sandbox):
             stack.set_visible_child_name(name)
             screenshot(window, f"settings-{name}")
         window._swap.set("0")
+        window._force_opengl.set_active(True)
         click(window, "Add Flag")
         row = window._flags.rows()[-1]
         row.name.set_text("FIntTargetRefreshRate")
@@ -193,6 +194,7 @@ class WindowTests(Sandbox):
         click(window, "Save")
         saved = config_module.load()
         self.assertEqual(saved.swap_interval, "0")
+        self.assertTrue(saved.force_opengl)
         self.assertEqual(saved.fast_flags, {"FIntTargetRefreshRate": 144})
         self.assertEqual(saved.extra_env, {"RUST_BACKTRACE": "1"})
 

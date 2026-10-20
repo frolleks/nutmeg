@@ -349,6 +349,7 @@ options set rosemary's environment variables, which rosemary's
 | Home folder | `ROSEMARY_PREFIX_HOME` |
 | Process server | `ROSEMARY_SERVER` (`off` when switched off) |
 | Display server | `SDL_VIDEO_DRIVER` (`wayland`, or `x11` for XWayland) |
+| Force OpenGL | `VK_DRIVER_FILES` (`/dev/null` when switched on) |
 | VSync | `ROSEMARY_SWAP_INTERVAL` |
 | Presentation mode | `ROSEMARY_METAL_PRESENTATION_MODE` |
 | Refresh rate | `ROSEMARY_SCREEN_REFRESH_RATE` |
@@ -361,9 +362,11 @@ options set rosemary's environment variables, which rosemary's
 | Execution | `rosemary run --native` or `--emulated` |
 
 In a Butter bottle's prefix, the bottle's settings take the place of these;
-see above. A setting left at "Default" leaves its variable unset, and nutmeg removes
-these variables from the environment it inherits, so the settings are the only
-place they come from. Any other variable can be added under "Extra environment
+see above. A setting left at "Default" leaves its variable unset, except Force
+OpenGL, which leaves `VK_DRIVER_FILES` as it is when switched off. nutmeg
+removes the variables the other settings control from the environment it
+inherits, so those settings are the only place they come from. Any other
+variable can be added under "Extra environment
 variables". A settings file from an older nutmeg that sets
 `ROSEMARY_PREFIX_HOME`, `ROSEMARY_SERVER`, `ROSEMARY_METAL_PRESENTATION_MODE`,
 `ROSEMARY_SCREEN_REFRESH_RATE` or `SDL_VIDEO_DRIVER` there has the value moved
