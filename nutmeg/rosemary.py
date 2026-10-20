@@ -281,6 +281,10 @@ def run_env(config: Config, base: dict[str, str] | None = None) -> dict[str, str
         env["ROSEMARY_SCREEN_REFRESH_RATE"] = config.screen_refresh_rate
     if config.video_driver:
         env["SDL_VIDEO_DRIVER"] = config.video_driver
+    if config.force_opengl:
+        # With no Vulkan driver, rosemary's Metal cannot start and Roblox uses
+        # its OpenGL renderer instead.
+        env["VK_DRIVER_FILES"] = "/dev/null"
     return env
 
 

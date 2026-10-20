@@ -380,6 +380,11 @@ class SettingsWindow(Adw.ApplicationWindow):
             "protocol, and X11 otherwise, which is XWayland on a Wayland desktop. "
             "Wayland needs a Wayland session.",
         )
+        self._force_opengl = _switch(
+            "Force OpenGL",
+            "Sets VK_DRIVER_FILES=/dev/null, which leaves rosemary's Metal without a "
+            "Vulkan driver, so Roblox uses its OpenGL renderer instead.",
+        )
         self._dead_flags = _switch(
             "Dead flag elimination",
             "ROSEMARY_DEAD_FLAGS. rosemary's docs warn that it may have semantic accuracy bugs.",
@@ -401,6 +406,7 @@ class SettingsWindow(Adw.ApplicationWindow):
                 "Display",
                 [
                     self._video_driver.widget,
+                    self._force_opengl,
                     self._swap.widget,
                     self._presentation.widget,
                     _row(
@@ -554,6 +560,7 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._presentation.set(config.metal_presentation_mode)
         self._refresh_rate.set_text(config.screen_refresh_rate)
         self._video_driver.set(config.video_driver)
+        self._force_opengl.set_active(config.force_opengl)
         self._discord.set_active(config.discord_presence)
         self._close_on_leave.set_active(config.close_on_leave)
         self._auto_update.set_active(config.auto_update)
@@ -581,6 +588,7 @@ class SettingsWindow(Adw.ApplicationWindow):
             metal_presentation_mode=self._presentation.get(),
             screen_refresh_rate=self._refresh_rate.get_text().strip(),
             video_driver=self._video_driver.get(),
+            force_opengl=self._force_opengl.get_active(),
             discord_presence=self._discord.get_active(),
             close_on_leave=self._close_on_leave.get_active(),
             auto_update=self._auto_update.get_active(),

@@ -163,6 +163,7 @@ class ConfigTests(Sandbox):
             {"screen_refresh_rate": "inf"},
             {"screen_refresh_rate": "1_000"},
             {"video_driver": "xwayland"},
+            {"force_opengl": 1},
             {"use_gamemode": 1},
             {"use_mangohud": "true"},
             {"wrapper_command": ["gamescope"]},
@@ -404,6 +405,7 @@ class RosemaryTests(Sandbox):
             metal_presentation_mode="immediate",
             screen_refresh_rate="144",
             video_driver="wayland",
+            force_opengl=True,
             extra_env={"RUST_BACKTRACE": "1"},
         )
         env = rosemary.run_env(config, {"ROSEMARY_SCREEN_REFRESH_RATE": "30"})
@@ -422,6 +424,7 @@ class RosemaryTests(Sandbox):
                 "ROSEMARY_METAL_PRESENTATION_MODE": "immediate",
                 "ROSEMARY_SCREEN_REFRESH_RATE": "144",
                 "SDL_VIDEO_DRIVER": "wayland",
+                "VK_DRIVER_FILES": "/dev/null",
                 "RUST_BACKTRACE": "1",
             },
         )
