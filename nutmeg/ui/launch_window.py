@@ -51,7 +51,9 @@ class GtkFrontend:
     def progress(self, fraction: Optional[float]) -> None:
         self._post(progress=fraction)
 
-    def ask(self, title: str, message: str, choices: list[tuple[str, str]]) -> Optional[str]:
+    def ask(
+        self, title: str, message: str, choices: list[tuple[str, str]]
+    ) -> Optional[str]:
         answered = threading.Event()
         result: list[Optional[str]] = [None]
 
@@ -151,7 +153,9 @@ class LaunchWindow(Adw.ApplicationWindow):
     def show_status(self, text: str, detail: str) -> None:
         self._status.set_title(text)
         # The description is markup.
-        self._status.set_description(GLib.markup_escape_text(detail) if detail else None)
+        self._status.set_description(
+            GLib.markup_escape_text(detail) if detail else None
+        )
 
     def show_progress(self, fraction: Optional[float]) -> None:
         self._indeterminate = fraction is None
@@ -203,18 +207,28 @@ class LaunchWindow(Adw.ApplicationWindow):
             GLib.idle_add(self._done_cancelled)
             return
         except config_module.ConfigError as e:
-            GLib.idle_add(self._done_failed, f"The settings could not be read.\n\n{e}", True, None, "")
+            GLib.idle_add(
+                self._done_failed,
+                f"The settings could not be read.\n\n{e}",
+                True,
+                None,
+                "",
+            )
             return
         except NutmegError as e:
             GLib.idle_add(self._done_failed, str(e), e.settings, log, tail)
             return
         except OSError as e:
             where = f" ({e.filename})" if e.filename else ""
-            GLib.idle_add(self._done_failed, f"{e.strerror or e}{where}", False, log, tail)
+            GLib.idle_add(
+                self._done_failed, f"{e.strerror or e}{where}", False, log, tail
+            )
             return
         except Exception as e:
             message = f"Something unexpected went wrong: {type(e).__name__}: {e}"
-            GLib.idle_add(self._done_failed, message, False, log, tail or traceback.format_exc())
+            GLib.idle_add(
+                self._done_failed, message, False, log, tail or traceback.format_exc()
+            )
             return
         GLib.idle_add(self._done_ok)
 
@@ -235,33 +249,53 @@ class LaunchWindow(Adw.ApplicationWindow):
         self.destroy()
         return GLib.SOURCE_REMOVE
 
-    def _done_failed(self, message: str, settings: bool, log: Optional[Path], tail: str) -> bool:
+    def _done_failed(
+        self, message: str, settings: bool, log: Optional[Path], tail: str
+    ) -> bool:
         self._finish()
-        self.show_status("Roblox could not be started" if self._start else "Roblox could not be updated", "")
-        self._bar.set_visible(False)
-        self._button.set_visible(False)
+        title = (
+            "Roblox could not be started"
+            if self._start
+            else "Roblox could not be updated"
+        )
         choices = [("close", "Close")]
         if log is not None:
             choices.append(("log", "Open Log"))
         if settings and self._on_settings is not None:
             choices.insert(0, ("settings", "Open Settings"))
 
+        # The dialog is shown once this window is gone, over the window it was
+        # opened from, or as a window of its own. The application is held
+        # meanwhile, as the dialog may be the only window left.
+        parent = self.get_transient_for()
+        application = self.get_application()
+        if application is not None:
+            application.hold()
+        self.destroy()
+
+        def release() -> None:
+            if application is not None:
+                application.release()
+
         def answered(choice: Optional[str]) -> None:
             if choice == "log" and log is not None:
                 problem = dialogs.open_path(log)
                 if problem is not None:
                     dialogs.choose(
-                        self, "Could not open the log", problem, [("close", "Close")],
-                        lambda _choice: self.destroy(),
+                        parent,
+                        "Could not open the log",
+                        problem,
+                        [("close", "Close")],
+                        lambda _choice: release(),
                     )
                     return
             elif choice == "settings" and self._on_settings is not None:
                 self._on_settings()
-            self.destroy()
+            release()
 
         dialogs.choose(
-            self,
-            "Roblox could not be started" if self._start else "Roblox could not be updated",
+            parent,
+            title,
             message,
             choices,
             answered,

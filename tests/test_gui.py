@@ -11,12 +11,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from nutmeg import launcher as launcher_module
+from helpers import Sandbox, Server, roblox_zip
+
 from nutmeg import config as config_module
 from nutmeg import desktop, paths, roblox, rosemary
+from nutmeg import launcher as launcher_module
 from nutmeg.config import Config
-
-from helpers import Sandbox, Server, roblox_zip
 
 try:
     import gi
@@ -219,8 +219,13 @@ class WindowTests(Sandbox):
             pump(lambda: window.get_mapped())
             window._stack.set_visible_child_name("integration")
             screenshot(window, "settings-integration-flatpak")
-            self.assertEqual(window._entries_state.get_subtitle(), "Added by the Flatpak")
-            labels = [button.get_label() for button in buttons(window._stack.get_child_by_name("integration"))]
+            self.assertEqual(
+                window._entries_state.get_subtitle(), "Added by the Flatpak"
+            )
+            labels = [
+                button.get_label()
+                for button in buttons(window._stack.get_child_by_name("integration"))
+            ]
             self.assertNotIn("Install", labels)
             self.assertNotIn("Remove", labels)
             texts = [label.get_text() for label in find_all(window, Gtk.Label)]
@@ -228,7 +233,10 @@ class WindowTests(Sandbox):
             self.assertFalse(window._auto_update.get_sensitive())
 
     def test_butter_runners_and_bottles_are_offered(self):
-        tool = self.butter_runner("rosemary-v1-official", 'name = "Rosemary 1 (Official Build)"\nexecutable = "bin/rosemary"\n')
+        tool = self.butter_runner(
+            "rosemary-v1-official",
+            'name = "Rosemary 1 (Official Build)"\nexecutable = "bin/rosemary"\n',
+        )
         prefix = self.butter_bottle("roblox", 'name = "Roblox"\n')
         window = SettingsWindow(self.app)
         window.present()
@@ -253,7 +261,9 @@ class WindowTests(Sandbox):
         self.assertEqual(saved.rosemary_path, str(tool))
         self.assertEqual(saved.prefix_path, str(prefix))
         self.assertFalse(saved.process_server)
-        self.assertEqual((saved.metal_presentation_mode, saved.screen_refresh_rate), ("fifo", "75"))
+        self.assertEqual(
+            (saved.metal_presentation_mode, saved.screen_refresh_rate), ("fifo", "75")
+        )
         self.assertEqual(saved.video_driver, "x11")
         self.assertFalse(saved.discord_presence)
         self.assertTrue(saved.close_on_leave)
@@ -283,7 +293,9 @@ class WindowTests(Sandbox):
         self.assertIn("screen_refresh_rate", window._message.get_title())
         window._refresh_rate.set_text("")
         click(window, "Save")
-        self.assertEqual(config_module.load().rosemary_path, "/opt/rosemary/target/release/rosemary")
+        self.assertEqual(
+            config_module.load().rosemary_path, "/opt/rosemary/target/release/rosemary"
+        )
 
     def test_an_unreadable_settings_file_is_replaced_on_save(self):
         paths.config_file().parent.mkdir(parents=True)
@@ -320,7 +332,9 @@ class WindowTests(Sandbox):
         self.assertFalse(paths.config_file().exists())
         number.entry.set_text("-60")
         click(window, "Save")
-        self.assertEqual(config_module.load().fast_flags, {"FFlagExample": True, "FIntExample": -60})
+        self.assertEqual(
+            config_module.load().fast_flags, {"FFlagExample": True, "FIntExample": -60}
+        )
         self.assertEqual(editor._state.get_text(), "2 flags.")
 
         # A type chosen by hand is kept when the name changes, and the value
@@ -347,7 +361,16 @@ class WindowTests(Sandbox):
 
     def test_flags_of_any_json_type_survive(self):
         window = SettingsWindow(self.app)
-        flags = {"A": 1.5, "B": None, "C": [1, 2], "D": {"x": "y"}, "E": "True", "F": -3, "G": False, "H": ""}
+        flags = {
+            "A": 1.5,
+            "B": None,
+            "C": [1, 2],
+            "D": {"x": "y"},
+            "E": "True",
+            "F": -3,
+            "G": False,
+            "H": "",
+        }
         window._flags.set_flags(flags)
         self.assertEqual(list(window._flags.get_flags().items()), list(flags.items()))
         self.assertEqual(
@@ -372,27 +395,47 @@ class WindowTests(Sandbox):
 
         import_text('{"FIntOne": 2, "FStringThree": "x"}', "Add to List")
         self.assertTrue(pump(lambda: len(editor.rows()) == 3))
-        self.assertEqual(editor.get_flags(), {"FIntOne": 2, "FFlagTwo": True, "FStringThree": "x"})
+        self.assertEqual(
+            editor.get_flags(), {"FIntOne": 2, "FFlagTwo": True, "FStringThree": "x"}
+        )
 
         import_text("[1, 2]", "Add to List")
         self.assertTrue(pump(lambda: dialog_titled("Import FastFlags") is not None))
         again = dialog_titled("Import FastFlags")
-        self.assertEqual(find(again, Gtk.TextView).get_buffer().get_property("text"), "[1, 2]")
-        self.assertTrue(any("must be a JSON object" in (label.get_text() or "") for label in find_all(again, Gtk.Label)))
+        self.assertEqual(
+            find(again, Gtk.TextView).get_buffer().get_property("text"), "[1, 2]"
+        )
+        self.assertTrue(
+            any(
+                "must be a JSON object" in (label.get_text() or "")
+                for label in find_all(again, Gtk.Label)
+            )
+        )
         click(again, "Cancel")
         self.assertTrue(pump(lambda: dialog_titled("Import FastFlags") is None))
         self.assertEqual(len(editor.rows()), 3)
 
         editor._search.set_text("fint")
-        self.assertTrue(pump(lambda: [r.widget.get_child_visible() for r in editor.rows()] == [True, False, False]))
+        self.assertTrue(
+            pump(
+                lambda: (
+                    [r.widget.get_child_visible() for r in editor.rows()]
+                    == [True, False, False]
+                )
+            )
+        )
         editor._search.set_text("")
-        self.assertTrue(pump(lambda: all(r.widget.get_child_visible() for r in editor.rows())))
+        self.assertTrue(
+            pump(lambda: all(r.widget.get_child_visible() for r in editor.rows()))
+        )
 
         copied = editor.copy_json()
         self.assertEqual(json.loads(copied), editor.get_flags())
         result = []
         clipboard = editor.get_clipboard()
-        clipboard.read_text_async(None, lambda source, task: result.append(source.read_text_finish(task)))
+        clipboard.read_text_async(
+            None, lambda source, task: result.append(source.read_text_finish(task))
+        )
         self.assertTrue(pump(lambda: result))
         self.assertEqual(result[0], copied)
 
@@ -406,7 +449,9 @@ class WindowTests(Sandbox):
         guid = "version-cccccccccccccccc"
         server.publish(guid, "0.702.0.1", {"x86_64": roblox_zip()}, ["a"])
         patches = [
-            mock.patch.object(roblox, "CLIENT_VERSION_URLS", (f"{server.url}/client-version",)),
+            mock.patch.object(
+                roblox, "CLIENT_VERSION_URLS", (f"{server.url}/client-version",)
+            ),
             mock.patch.object(roblox, "CDN_HOSTS", (f"{server.url}/a",)),
             mock.patch.object(rosemary, "host_arch", return_value="x86_64"),
             mock.patch.object(launcher_module, "STARTUP_GRACE_SECONDS", 0.5),
@@ -420,8 +465,12 @@ class WindowTests(Sandbox):
 
         window = LaunchWindow(self.app, url=url, start=True)
         window.present()
-        self.assertTrue(pump(lambda: dialog_titled("Set up the rosemary prefix") is not None))
-        screenshot(dialog_titled("Set up the rosemary prefix"), "launch-prefix-question")
+        self.assertTrue(
+            pump(lambda: dialog_titled("Set up the rosemary prefix") is not None)
+        )
+        screenshot(
+            dialog_titled("Set up the rosemary prefix"), "launch-prefix-question"
+        )
         click(dialog_titled("Set up the rosemary prefix"), "Download the base")
         self.assertTrue(pump(lambda: not window.get_visible(), 30))
         record = self.record()
@@ -436,20 +485,30 @@ class WindowTests(Sandbox):
         title = "Roblox could not be started"
         self.assertTrue(pump(lambda: dialog_titled(title) is not None))
         dialog = dialog_titled(title)
-        self.assertIs(dialog.get_root(), window)
-        self.assertEqual(window._status.get_title(), title)
+        # The window is gone before the dialog is shown, so the dialog is a
+        # window of its own.
+        self.assertFalse(window.get_visible())
+        self.assertIsNot(dialog.get_root(), window)
+        self.assertIsInstance(dialog.get_root(), Gtk.Window)
         screenshot(dialog, "launch-failed-dialog")
         # The suggested choice is rightmost.
-        self.assertEqual([b.get_label() for b in buttons(dialog)], ["Open Log", "Close", "Open Settings"])
+        self.assertEqual(
+            [b.get_label() for b in buttons(dialog)],
+            ["Open Log", "Close", "Open Settings"],
+        )
         click(dialog, "Close")
-        self.assertTrue(pump(lambda: not window.get_visible()))
+        self.assertTrue(pump(lambda: dialog_titled(title) is None))
 
     def test_update_window_stays_open_when_done(self):
         server = Server()
         self.addCleanup(server.close)
-        server.publish("version-dddddddddddddddd", "0.703.0.1", {"x86_64": roblox_zip()}, ["a"])
+        server.publish(
+            "version-dddddddddddddddd", "0.703.0.1", {"x86_64": roblox_zip()}, ["a"]
+        )
         for patch in (
-            mock.patch.object(roblox, "CLIENT_VERSION_URLS", (f"{server.url}/client-version",)),
+            mock.patch.object(
+                roblox, "CLIENT_VERSION_URLS", (f"{server.url}/client-version",)
+            ),
             mock.patch.object(roblox, "CDN_HOSTS", (f"{server.url}/a",)),
             mock.patch.object(rosemary, "host_arch", return_value="x86_64"),
         ):
@@ -458,7 +517,9 @@ class WindowTests(Sandbox):
         config_module.save(Config(rosemary_path=str(self.fake_rosemary())))
         window = LaunchWindow(self.app, url=None, start=False)
         window.present()
-        self.assertTrue(pump(lambda: dialog_titled("Set up the rosemary prefix") is not None))
+        self.assertTrue(
+            pump(lambda: dialog_titled("Set up the rosemary prefix") is not None)
+        )
         click(dialog_titled("Set up the rosemary prefix"), "Continue without it")
         self.assertTrue(pump(lambda: window._button.get_label() == "Close", 30))
         self.assertIn("is installed", window._status.get_title())
@@ -470,7 +531,13 @@ class WindowTests(Sandbox):
         from nutmeg.ui import dialogs
 
         answers = []
-        dialogs.choose(None, "Roblox could not be started", "No such link", [("close", "Close")], answers.append)
+        dialogs.choose(
+            None,
+            "Roblox could not be started",
+            "No such link",
+            [("close", "Close")],
+            answers.append,
+        )
         dialog = dialog_titled("Roblox could not be started")
         self.assertIsNotNone(dialog)
         self.assertIsInstance(dialog.get_root(), Gtk.Window)
@@ -497,9 +564,15 @@ class LaunchContextTests(Sandbox):
                 "GIO_MODULE_DIR": "/tmp/.mount_nutmeg/usr/lib/gio/modules",
             }
         )
-        env = dict(item.split("=", 1) for item in dialogs.launch_context().get_environment())
+        env = dict(
+            item.split("=", 1) for item in dialogs.launch_context().get_environment()
+        )
         self.assertEqual(env["GI_TYPELIB_PATH"], "/opt/typelibs")
-        for name in ("GIO_MODULE_DIR", paths.APPIMAGE_VARS, "NUTMEG_HOST_GI_TYPELIB_PATH"):
+        for name in (
+            "GIO_MODULE_DIR",
+            paths.APPIMAGE_VARS,
+            "NUTMEG_HOST_GI_TYPELIB_PATH",
+        ):
             self.assertNotIn(name, env)
         self.assertEqual(env["HOME"], os.environ["HOME"])
 
