@@ -311,7 +311,7 @@ in the bottle:
 | `swap_interval`                               | `ROSEMARY_SWAP_INTERVAL`                                                 |
 | `prefix_home`                                 | `ROSEMARY_PREFIX_HOME`                                                   |
 | `steam = false`                               | `ROSEMARY_STEAM=0`                                                       |
-| `menu_ctrl = false`                           | `ROSEMARY_MENU_CTRL=0`                                                   |
+| `menu_ctrl = false`                           | `ROSEMARY_CONTROL_EDIT_KEYS=0`                                           |
 | `confine_pointer = true`                      | `ROSEMARY_CONFINE_POINTER=1`                                             |
 | `disable_metal = true`                        | `VK_DRIVER_FILES=/dev/null`                                              |
 | `process_server = false`                      | `ROSEMARY_SERVER=off`                                                    |
@@ -344,7 +344,7 @@ options set Rosemary's environment variables, which Rosemary's
 | Refresh rate                               | `ROSEMARY_SCREEN_REFRESH_RATE`                        |
 | Title bar                                  | `ROSEMARY_DECORATIONS`                                |
 | Menus                                      | `ROSEMARY_MENU`                                       |
-| Control works as Command in menu shortcuts | `ROSEMARY_MENU_CTRL`                                  |
+| Control works as Command in menu shortcuts | `ROSEMARY_CONTROL_EDIT_KEYS`                          |
 | Keep the pointer inside the window         | `ROSEMARY_CONFINE_POINTER`                            |
 | Dead flag elimination                      | `ROSEMARY_DEAD_FLAGS`                                 |
 | Native call return                         | `ROSEMARY_CALL_RETURN`                                |

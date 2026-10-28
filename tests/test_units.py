@@ -15,12 +15,12 @@ import zipfile
 from pathlib import Path
 from unittest import mock
 
-from nutmeg import config as config_module
+from helpers import Sandbox, fat, macho, roblox_zip
+
 from nutmeg import butter, fastflags, paths, processes, protocol, roblox, rosemary
+from nutmeg import config as config_module
 from nutmeg.config import Config, ConfigError
 from nutmeg.errors import NutmegError
-
-from helpers import Sandbox, fat, macho, roblox_zip
 
 # A bottle.toml shaped as Butter's toml::to_string_pretty writes one.
 BOTTLE_TOML = """\
@@ -73,10 +73,20 @@ class ProtocolTests(unittest.TestCase):
             protocol.redact(f"run x -protocolString {url}"),
             "run x -protocolString roblox-player:1+launchmode:play+gameinfo:<hidden>+launchtime:1+browsertrackerid:2",
         )
-        self.assertEqual(protocol.redact("roblox://experiences/start?placeId=1"), "roblox://experiences/start?placeId=1")
+        self.assertEqual(
+            protocol.redact("roblox://experiences/start?placeId=1"),
+            "roblox://experiences/start?placeId=1",
+        )
 
     def test_refuses_other_links(self):
-        for url in ("https://roblox.com", "roblox-player:", "file:///etc/passwd", "", "roblox", "roblox-player:1\n2"):
+        for url in (
+            "https://roblox.com",
+            "roblox-player:",
+            "file:///etc/passwd",
+            "",
+            "roblox",
+            "roblox-player:1\n2",
+        ):
             with self.assertRaises(protocol.InvalidURL):
                 protocol.check(url)
 
@@ -88,7 +98,18 @@ class FastFlagTests(unittest.TestCase):
             ["bool", "int", "string", "json", "json", "json", "json"],
         )
         self.assertEqual(
-            [fastflags.kind_for_name(n) for n in ("FFlagX", "DFFlagX", "SFFlagX", "FIntX", "DFIntX", "FStringX", "DFStringX")],
+            [
+                fastflags.kind_for_name(n)
+                for n in (
+                    "FFlagX",
+                    "DFFlagX",
+                    "SFFlagX",
+                    "FIntX",
+                    "DFIntX",
+                    "FStringX",
+                    "DFStringX",
+                )
+            ],
             ["bool", "bool", "bool", "int", "int", "string", "string"],
         )
         for name in ("FFlag", "FLogX", "Other", ""):
@@ -98,13 +119,23 @@ class FastFlagTests(unittest.TestCase):
         self.assertEqual(fastflags.value_of("int", " -42 ", False), -42)
         self.assertIs(fastflags.value_of("bool", "ignored", True), True)
         self.assertEqual(fastflags.value_of("string", " spaced ", False), " spaced ")
-        self.assertEqual(fastflags.value_of("json", '{"a": [1, null]}', False), {"a": [1, None]})
-        for kind, text in (("int", "1.5"), ("int", "1_000"), ("int", ""), ("json", "{"), ("json", "")):
+        self.assertEqual(
+            fastflags.value_of("json", '{"a": [1, null]}', False), {"a": [1, None]}
+        )
+        for kind, text in (
+            ("int", "1.5"),
+            ("int", "1_000"),
+            ("int", ""),
+            ("json", "{"),
+            ("json", ""),
+        ):
             with self.subTest(kind=kind, text=text), self.assertRaises(ValueError):
                 fastflags.value_of(kind, text, False)
         for value in (True, 7, "s", 2.5, None, [1, "x"], {"k": False}):
             kind = fastflags.kind_of(value)
-            self.assertEqual(fastflags.value_of(kind, fastflags.text_of(value), bool(value)), value)
+            self.assertEqual(
+                fastflags.value_of(kind, fastflags.text_of(value), bool(value)), value
+            )
 
     def test_collect(self):
         rows = [("  FFlagA ", "bool", "", True), ("FIntB", "int", "60", False)]
@@ -118,7 +149,9 @@ class FastFlagTests(unittest.TestCase):
 
     def test_parse_object(self):
         self.assertEqual(fastflags.parse_object("  "), {})
-        self.assertEqual(fastflags.parse_object('{"A": 1, "B": true}'), {"A": 1, "B": True})
+        self.assertEqual(
+            fastflags.parse_object('{"A": 1, "B": true}'), {"A": 1, "B": True}
+        )
         for text in ("[1]", '"x"', "{"):
             with self.assertRaises(ConfigError):
                 fastflags.parse_object(text)
@@ -179,20 +212,34 @@ class ConfigTests(Sandbox):
     def test_wrapper_commands(self):
         parse = config_module.parse_wrapper
         self.assertEqual(parse(""), config_module.WrapperCommand({}, [], []))
-        self.assertEqual(parse("obs-gamecapture"), config_module.WrapperCommand({}, ["obs-gamecapture"], []))
+        self.assertEqual(
+            parse("obs-gamecapture"),
+            config_module.WrapperCommand({}, ["obs-gamecapture"], []),
+        )
         self.assertEqual(
             parse("gamescope -W 1920 -H 1080 -- %command%"),
-            config_module.WrapperCommand({}, ["gamescope", "-W", "1920", "-H", "1080", "--"], []),
+            config_module.WrapperCommand(
+                {}, ["gamescope", "-W", "1920", "-H", "1080", "--"], []
+            ),
         )
         self.assertEqual(
             parse("MANGOHUD_CONFIG='fps,frametime' A=1 strace -f %command% --verbose"),
-            config_module.WrapperCommand({"MANGOHUD_CONFIG": "fps,frametime", "A": "1"}, ["strace", "-f"], ["--verbose"]),
+            config_module.WrapperCommand(
+                {"MANGOHUD_CONFIG": "fps,frametime", "A": "1"},
+                ["strace", "-f"],
+                ["--verbose"],
+            ),
         )
         # Only words at the start set variables.
         self.assertEqual(parse("env A=1 %command%").before, ["env", "A=1"])
-        self.assertEqual(parse("DXVK_HUD=1 %command%"), config_module.WrapperCommand({"DXVK_HUD": "1"}, [], []))
+        self.assertEqual(
+            parse("DXVK_HUD=1 %command%"),
+            config_module.WrapperCommand({"DXVK_HUD": "1"}, [], []),
+        )
         config_module.save(Config(wrapper_command="gamescope -f -- %command%"))
-        self.assertEqual(config_module.load().wrapper_command, "gamescope -f -- %command%")
+        self.assertEqual(
+            config_module.load().wrapper_command, "gamescope -f -- %command%"
+        )
 
     def test_variables_that_became_settings_are_moved_out_of_extra_env(self):
         config = Config.from_dict(
@@ -212,18 +259,29 @@ class ConfigTests(Sandbox):
         self.assertEqual(config.screen_refresh_rate, "59.94")
         self.assertEqual(config.extra_env, {"RUST_LOG": "debug"})
         # SDL reads SDL_VIDEO_DRIVER before its older spelling, and so does this.
-        config = Config.from_dict({"extra_env": {"SDL_VIDEODRIVER": "wayland", "SDL_VIDEO_DRIVER": "X11"}})
+        config = Config.from_dict(
+            {"extra_env": {"SDL_VIDEODRIVER": "wayland", "SDL_VIDEO_DRIVER": "X11"}}
+        )
         self.assertEqual((config.video_driver, config.extra_env), ("x11", {}))
         config = Config.from_dict({"extra_env": {"SDL_VIDEODRIVER": "wayland"}})
         self.assertEqual(config.video_driver, "wayland")
         # Values rosemary would ignore become the defaults, which it uses then.
         config = Config.from_dict(
-            {"extra_env": {"ROSEMARY_METAL_PRESENTATION_MODE": "vsync", "ROSEMARY_SCREEN_REFRESH_RATE": "0"}}
+            {
+                "extra_env": {
+                    "ROSEMARY_METAL_PRESENTATION_MODE": "vsync",
+                    "ROSEMARY_SCREEN_REFRESH_RATE": "0",
+                }
+            }
         )
-        self.assertEqual((config.metal_presentation_mode, config.screen_refresh_rate), ("", ""))
+        self.assertEqual(
+            (config.metal_presentation_mode, config.screen_refresh_rate), ("", "")
+        )
         # A file that has the setting already keeps it, and the variable is refused.
         with self.assertRaises(ConfigError):
-            Config.from_dict({"process_server": True, "extra_env": {"ROSEMARY_SERVER": "off"}})
+            Config.from_dict(
+                {"process_server": True, "extra_env": {"ROSEMARY_SERVER": "off"}}
+            )
 
     def test_unreadable_file_is_an_error_not_the_defaults(self):
         paths.config_file().parent.mkdir(parents=True)
@@ -249,17 +307,23 @@ class MachOTests(Sandbox):
     def test_not_macho(self):
         self.assertEqual(self.check(b"\x7fELF" + b"\0" * 60), set())
         # A Java class file begins with the fat magic, then its version.
-        self.assertEqual(self.check(bytes.fromhex("cafebabe00000034") + b"\0" * 64), set())
+        self.assertEqual(
+            self.check(bytes.fromhex("cafebabe00000034") + b"\0" * 64), set()
+        )
         self.assertEqual(self.check(b"\xcf"), set())
 
 
 class InstallTests(Sandbox):
-    build = roblox.Build(guid="version-0123456789abcdef", version="0.1.0.1", arch="x86_64")
+    build = roblox.Build(
+        guid="version-0123456789abcdef", version="0.1.0.1", arch="x86_64"
+    )
 
     def install(self, data: bytes, build: roblox.Build | None = None) -> Path:
         archive = self.root / "archive.zip"
         archive.write_bytes(data)
-        return roblox.install(archive, build or self.build, lambda *_: None, threading.Event())
+        return roblox.install(
+            archive, build or self.build, lambda *_: None, threading.Event()
+        )
 
     def test_installs_as_roblox_app_and_keeps_only_the_executable_bit(self):
         os.umask(0o022)
@@ -270,10 +334,14 @@ class InstallTests(Sandbox):
         self.assertEqual(program.stat().st_mode & 0o777, 0o755)
         resource = bundle / "Contents/Resources/content.txt"
         self.assertEqual(resource.stat().st_mode & 0o777, 0o644)
-        self.assertEqual(os.readlink(bundle / "Contents/Frameworks/Current"), "Versions/A")
+        self.assertEqual(
+            os.readlink(bundle / "Contents/Frameworks/Current"), "Versions/A"
+        )
         self.assertEqual(roblox.installed_executable(self.build), program)
         self.assertEqual(roblox.installed_keys(), [self.build.key])
-        self.assertEqual([p.name for p in paths.versions_dir().iterdir()], [self.build.key])
+        self.assertEqual(
+            [p.name for p in paths.versions_dir().iterdir()], [self.build.key]
+        )
 
     def test_refuses_unsafe_archives(self):
         cases = [
@@ -293,7 +361,9 @@ class InstallTests(Sandbox):
 
     def test_wrong_architecture_is_refused(self):
         with self.assertRaisesRegex(NutmegError, "expected to be arm64"):
-            self.install(roblox_zip("x86_64"), roblox.Build(self.build.guid, "", "arm64"))
+            self.install(
+                roblox_zip("x86_64"), roblox.Build(self.build.guid, "", "arm64")
+            )
         self.assertEqual(list(paths.versions_dir().iterdir()), [])
 
     def test_corruption_is_detected(self):
@@ -310,7 +380,9 @@ class InstallTests(Sandbox):
                 data = bytearray(buffer.getvalue())
                 info = zipfile.ZipFile(io.BytesIO(bytes(data))).getinfo(name)
                 start = info.header_offset
-                name_length, extra_length = struct.unpack("<HH", data[start + 26 : start + 30])
+                name_length, extra_length = struct.unpack(
+                    "<HH", data[start + 26 : start + 30]
+                )
                 body = start + 30 + name_length + extra_length
                 data[body + info.compress_size // 2] ^= 0xFF
                 with self.assertRaises(NutmegError):
@@ -332,7 +404,9 @@ class InstallTests(Sandbox):
         bundle = self.build.bundle()
         roblox.write_fast_flags(bundle, {"FIntTargetRefreshRate": 144})
         written = bundle / "Contents/MacOS/ClientSettings/ClientAppSettings.json"
-        self.assertEqual(json.loads(written.read_text()), {"FIntTargetRefreshRate": 144})
+        self.assertEqual(
+            json.loads(written.read_text()), {"FIntTargetRefreshRate": 144}
+        )
         roblox.write_fast_flags(bundle, {})
         self.assertFalse(written.exists())
 
@@ -340,22 +414,36 @@ class InstallTests(Sandbox):
         self.assertIsNone(roblox.load_installed())
         roblox.save_installed(self.build)
         self.assertEqual(roblox.load_installed(), self.build)
-        paths.installed_file().write_text('{"guid": "version-../../x", "arch": "x86_64"}')
+        paths.installed_file().write_text(
+            '{"guid": "version-../../x", "arch": "x86_64"}'
+        )
         self.assertIsNone(roblox.load_installed())
 
     def test_remove_versions(self):
-        for key in ("version-aa-x86_64", "version-bb-x86_64", "version-cc-x86_64", ".tmp-version-dd-x86_64-1"):
+        for key in (
+            "version-aa-x86_64",
+            "version-bb-x86_64",
+            "version-cc-x86_64",
+            ".tmp-version-dd-x86_64-1",
+        ):
             (paths.versions_dir() / key).mkdir(parents=True)
         removed = roblox.remove_versions({"version-aa-x86_64"}, {"version-bb-x86_64"})
         self.assertEqual(removed, ["version-cc-x86_64"])
         roblox.remove_leftovers()
-        self.assertEqual(sorted(p.name for p in paths.versions_dir().iterdir()), ["version-aa-x86_64", "version-bb-x86_64"])
+        self.assertEqual(
+            sorted(p.name for p in paths.versions_dir().iterdir()),
+            ["version-aa-x86_64", "version-bb-x86_64"],
+        )
 
     def test_zip_urls(self):
         x86 = roblox.Build("version-1", "", "x86_64").zip_urls()
         arm = roblox.Build("version-1", "", "arm64").zip_urls()
-        self.assertEqual(x86[0], "https://setup.rbxcdn.com/mac/version-1-RobloxPlayer.zip")
-        self.assertEqual(arm[0], "https://setup.rbxcdn.com/mac/arm64/version-1-RobloxPlayer.zip")
+        self.assertEqual(
+            x86[0], "https://setup.rbxcdn.com/mac/version-1-RobloxPlayer.zip"
+        )
+        self.assertEqual(
+            arm[0], "https://setup.rbxcdn.com/mac/arm64/version-1-RobloxPlayer.zip"
+        )
         self.assertEqual(len(x86), len(roblox.CDN_HOSTS))
 
 
@@ -370,7 +458,7 @@ class RosemaryTests(Sandbox):
         self.assertIsNone(rosemary.prefix_base_arch(prefix))
         # The shape rosemary's State::render writes.
         state.write_text(
-            '# Written by `rosemary prefix`. See docs/prefixes.md.\nversion: 1\ncreated_with:\n'
+            "# Written by `rosemary prefix`. See docs/prefixes.md.\nversion: 1\ncreated_with:\n"
             '  runtime_version: "0.1.0"\nbase:\n  project: "minidarwin"\n  arch: "aarch64"\n'
             '  sequence: 9\n  tag: "v9.0.0"\naccepted_sequence: 9\n'
         )
@@ -415,7 +503,7 @@ class RosemaryTests(Sandbox):
                 "ROSEMARY_SWAP_INTERVAL": "-1",
                 "ROSEMARY_DECORATIONS": "server",
                 "ROSEMARY_MENU": "strip",
-                "ROSEMARY_MENU_CTRL": "0",
+                "ROSEMARY_CONTROL_EDIT_KEYS": "0",
                 "ROSEMARY_CONFINE_POINTER": "1",
                 "ROSEMARY_DEAD_FLAGS": "1",
                 "ROSEMARY_CALL_RETURN": "1",
@@ -456,17 +544,36 @@ class RosemaryTests(Sandbox):
         with mock.patch.object(rosemary, "host_arch", return_value="arm64"):
             # The bottle emulates, so the arm64 build is refused, and the
             # message says where execution is chosen.
-            with self.assertRaisesRegex(NutmegError, "the Roblox bottle's settings in Butter"):
+            with self.assertRaisesRegex(
+                NutmegError, "the Roblox bottle's settings in Butter"
+            ):
                 rosemary.build_arch(config)
-            self.assertEqual(rosemary.build_arch(Config(prefix_path=str(prefix), architecture="x86_64")), "x86_64")
+            self.assertEqual(
+                rosemary.build_arch(
+                    Config(prefix_path=str(prefix), architecture="x86_64")
+                ),
+                "x86_64",
+            )
 
     def test_command_line(self):
         program = Path("/data/versions/v/Roblox.app")
         tool = Path("/bin/rosemary")
-        self.assertEqual(rosemary.run_argv(tool, Config(), program, None), ["/bin/rosemary", "run", str(program)])
         self.assertEqual(
-            rosemary.run_argv(tool, Config(engine="emulated"), program, "roblox-player:1"),
-            ["/bin/rosemary", "run", "--emulated", str(program), "-protocolString", "roblox-player:1"],
+            rosemary.run_argv(tool, Config(), program, None),
+            ["/bin/rosemary", "run", str(program)],
+        )
+        self.assertEqual(
+            rosemary.run_argv(
+                tool, Config(engine="emulated"), program, "roblox-player:1"
+            ),
+            [
+                "/bin/rosemary",
+                "run",
+                "--emulated",
+                str(program),
+                "-protocolString",
+                "roblox-player:1",
+            ],
         )
 
     def test_wrappers(self):
@@ -479,18 +586,46 @@ class RosemaryTests(Sandbox):
                 ["/usr/bin/mangohud", "/bin/rosemary", "run", str(program)],
             )
             self.assertEqual(
-                rosemary.run_argv(tool, Config(use_gamemode=True, use_mangohud=True, engine="native"), program, None),
-                ["/usr/bin/gamemoderun", "/usr/bin/mangohud", "/bin/rosemary", "run", "--native", str(program)],
+                rosemary.run_argv(
+                    tool,
+                    Config(use_gamemode=True, use_mangohud=True, engine="native"),
+                    program,
+                    None,
+                ),
+                [
+                    "/usr/bin/gamemoderun",
+                    "/usr/bin/mangohud",
+                    "/bin/rosemary",
+                    "run",
+                    "--native",
+                    str(program),
+                ],
             )
             # They apply in a Butter bottle's prefix too.
             prefix = self.butter_bottle("roblox", BOTTLE_TOML)
             self.assertEqual(
-                rosemary.run_argv(tool, Config(prefix_path=str(prefix), use_gamemode=True), program, None),
-                ["/usr/bin/gamemoderun", "/bin/rosemary", "run", "--emulated", str(program)],
+                rosemary.run_argv(
+                    tool,
+                    Config(prefix_path=str(prefix), use_gamemode=True),
+                    program,
+                    None,
+                ),
+                [
+                    "/usr/bin/gamemoderun",
+                    "/bin/rosemary",
+                    "run",
+                    "--emulated",
+                    str(program),
+                ],
             )
         with mock.patch.object(rosemary.shutil, "which", return_value=None):
-            self.assertEqual(rosemary.run_argv(tool, Config(), program, None), ["/bin/rosemary", "run", str(program)])
-            with self.assertRaisesRegex(NutmegError, "gamemoderun was not found on PATH") as caught:
+            self.assertEqual(
+                rosemary.run_argv(tool, Config(), program, None),
+                ["/bin/rosemary", "run", str(program)],
+            )
+            with self.assertRaisesRegex(
+                NutmegError, "gamemoderun was not found on PATH"
+            ) as caught:
                 rosemary.run_argv(tool, Config(use_gamemode=True), program, None)
             self.assertTrue(caught.exception.settings)
 
@@ -501,9 +636,17 @@ class RosemaryTests(Sandbox):
                 rosemary.build_arch(Config(architecture="arm64"))
         with mock.patch.object(rosemary, "host_arch", return_value="arm64"):
             self.assertEqual(rosemary.build_arch(Config()), "arm64")
-            self.assertEqual(rosemary.build_arch(Config(architecture="x86_64")), "x86_64")
-            self.assertEqual(rosemary.build_arch(Config(architecture="x86_64", engine="emulated")), "x86_64")
-            for bad in (Config(architecture="x86_64", engine="native"), Config(engine="emulated")):
+            self.assertEqual(
+                rosemary.build_arch(Config(architecture="x86_64")), "x86_64"
+            )
+            self.assertEqual(
+                rosemary.build_arch(Config(architecture="x86_64", engine="emulated")),
+                "x86_64",
+            )
+            for bad in (
+                Config(architecture="x86_64", engine="native"),
+                Config(engine="emulated"),
+            ):
                 with self.assertRaises(NutmegError):
                     rosemary.build_arch(bad)
         with mock.patch.object(rosemary, "host_arch", return_value=None):
@@ -515,7 +658,9 @@ class RosemaryTests(Sandbox):
             with self.assertRaises(NutmegError):
                 rosemary.find_rosemary(Config())
             tool = self.fake_rosemary()
-            self.assertEqual(rosemary.find_rosemary(Config(rosemary_path=str(tool))), tool)
+            self.assertEqual(
+                rosemary.find_rosemary(Config(rosemary_path=str(tool))), tool
+            )
         with mock.patch.dict(os.environ, {"PATH": str(tool.parent)}):
             self.assertEqual(rosemary.find_rosemary(Config()), tool)
         with self.assertRaises(NutmegError):
@@ -523,14 +668,24 @@ class RosemaryTests(Sandbox):
 
     def test_find_rosemary_with_butter(self):
         with mock.patch.dict(os.environ, {"PATH": str(self.root / "nowhere")}):
-            with self.assertRaisesRegex(NutmegError, "Install a rosemary runner with Butter"):
+            with self.assertRaisesRegex(
+                NutmegError, "Install a rosemary runner with Butter"
+            ):
                 rosemary.find_rosemary(Config())
-            tool = self.butter_runner("rosemary-v1", 'name = "Rosemary 1"\nexecutable = "bin/rosemary"\n')
-            with self.assertRaisesRegex(NutmegError, "Choose one of the runners Butter has installed"):
+            tool = self.butter_runner(
+                "rosemary-v1", 'name = "Rosemary 1"\nexecutable = "bin/rosemary"\n'
+            )
+            with self.assertRaisesRegex(
+                NutmegError, "Choose one of the runners Butter has installed"
+            ):
                 rosemary.find_rosemary(Config())
-            self.assertEqual(rosemary.find_rosemary(Config(rosemary_path=str(tool))), tool)
+            self.assertEqual(
+                rosemary.find_rosemary(Config(rosemary_path=str(tool))), tool
+            )
             tool.unlink()
-            with self.assertRaisesRegex(NutmegError, "Butter runner rosemary-v1 is no longer installed"):
+            with self.assertRaisesRegex(
+                NutmegError, "Butter runner rosemary-v1 is no longer installed"
+            ):
                 rosemary.find_rosemary(Config(rosemary_path=str(tool)))
 
     def test_stop_server(self):
@@ -547,21 +702,29 @@ class RosemaryTests(Sandbox):
         prefix = self.root / "prefix"
         lines = []
         rosemary.create_prefix(tool, prefix, "x86_64", lines.append, threading.Event())
-        called = json.loads(Path(os.environ["FAKE_ROSEMARY_RECORD"] + ".prefix").read_text())
-        self.assertEqual(called["argv"], ["prefix", "create", str(prefix), "--arch", "x86_64"])
+        called = json.loads(
+            Path(os.environ["FAKE_ROSEMARY_RECORD"] + ".prefix").read_text()
+        )
+        self.assertEqual(
+            called["argv"], ["prefix", "create", str(prefix), "--arch", "x86_64"]
+        )
         self.assertEqual(called["setup"], "download")
         self.assertEqual(lines, [f"created {prefix}"])
         self.assertEqual(rosemary.prefix_base_arch(prefix), "x86_64")
 
         other = self.root / "other"
         rosemary.create_prefix(tool, other, None, lines.append, threading.Event())
-        called = json.loads(Path(os.environ["FAKE_ROSEMARY_RECORD"] + ".prefix").read_text())
+        called = json.loads(
+            Path(os.environ["FAKE_ROSEMARY_RECORD"] + ".prefix").read_text()
+        )
         self.assertEqual(called["argv"], ["prefix", "create", str(other), "--no-base"])
         self.assertIsNone(rosemary.prefix_base_arch(other))
 
         os.environ["FAKE_ROSEMARY_PREFIX_FAIL"] = "1"
         with self.assertRaisesRegex(NutmegError, "could not download the base"):
-            rosemary.create_prefix(tool, self.root / "third", "x86_64", lines.append, threading.Event())
+            rosemary.create_prefix(
+                tool, self.root / "third", "x86_64", lines.append, threading.Event()
+            )
 
 
 class ButterTests(Sandbox):
@@ -593,16 +756,28 @@ class ButterTests(Sandbox):
 
     def test_runners(self):
         self.assertEqual(butter.runners(), [])
-        self.butter_runner("custom", 'name = "Mine"\nkind = "custom"\nexecutable = "bin/rosemary"\n')
-        self.butter_runner("rosemary-v0-9-0", 'name = "Rosemary 0.9.0"\nkind = "source"\ntag = "v0.9.0"\nexecutable = "bin/rosemary"\n')
+        self.butter_runner(
+            "custom", 'name = "Mine"\nkind = "custom"\nexecutable = "bin/rosemary"\n'
+        )
+        self.butter_runner(
+            "rosemary-v0-9-0",
+            'name = "Rosemary 0.9.0"\nkind = "source"\ntag = "v0.9.0"\nexecutable = "bin/rosemary"\n',
+        )
         self.butter_runner(
             "rosemary-v0-10-0-official",
             'name = "Rosemary 0.10.0 (Official Build)"\nkind = "binary"\ntag = "v0.10.0"\nexecutable = "bin/rosemary"\n',
             flatpak=True,
         )
-        self.butter_runner("rosemary-git-abc", 'name = "Rosemary dev abc"\nkind = "source"\nexecutable = "bin/rosemary"\n')
-        self.butter_runner(".rosemary-v2-partial", 'name = "Unpacking"\nexecutable = "bin/rosemary"\n')
-        self.butter_runner("rosemary-v3", 'name = "No binary"\nexecutable = "bin/gone"\n')
+        self.butter_runner(
+            "rosemary-git-abc",
+            'name = "Rosemary dev abc"\nkind = "source"\nexecutable = "bin/rosemary"\n',
+        )
+        self.butter_runner(
+            ".rosemary-v2-partial", 'name = "Unpacking"\nexecutable = "bin/rosemary"\n'
+        )
+        self.butter_runner(
+            "rosemary-v3", 'name = "No binary"\nexecutable = "bin/gone"\n'
+        )
         found = butter.runners()
         self.assertEqual(
             [r.label() for r in found],
@@ -613,9 +788,13 @@ class ButterTests(Sandbox):
                 "Mine (Butter)",
             ],
         )
-        self.assertEqual(found[1].executable, self.root / "data/butter/runners/rosemary-v0-9-0/bin/rosemary")
         self.assertEqual(
-            butter.runner_directory(found[1].executable), self.root / "data/butter/runners/rosemary-v0-9-0"
+            found[1].executable,
+            self.root / "data/butter/runners/rosemary-v0-9-0/bin/rosemary",
+        )
+        self.assertEqual(
+            butter.runner_directory(found[1].executable),
+            self.root / "data/butter/runners/rosemary-v0-9-0",
         )
         self.assertIsNone(butter.runner_directory(self.root / "bin/rosemary"))
 
@@ -647,15 +826,22 @@ class ButterTests(Sandbox):
         self.assertIsNone(butter.bottle_for_prefix(prefix.parent))
 
     def test_bottles(self):
-        prefix = self.butter_bottle("roblox", 'name = "Roblox"\nrunner = "rosemary-v1"\n\n[env]\n')
+        prefix = self.butter_bottle(
+            "roblox", 'name = "Roblox"\nrunner = "rosemary-v1"\n\n[env]\n'
+        )
         self.butter_bottle("new", 'name = "Not created"\n', created=False)
         self.assertEqual(butter.bottles(), [butter.Bottle("Roblox", prefix, False)])
 
 
 class ProcessTests(Sandbox):
     def test_finds_and_stops_processes_running_a_build(self):
-        program = paths.versions_dir() / "version-aa-x86_64/Roblox.app/Contents/MacOS/RobloxPlayer"
-        guest = processes.GUEST_HOST_MOUNT + str(paths.versions_dir() / "version-bb-x86_64/Roblox.app/x")
+        program = (
+            paths.versions_dir()
+            / "version-aa-x86_64/Roblox.app/Contents/MacOS/RobloxPlayer"
+        )
+        guest = processes.GUEST_HOST_MOUNT + str(
+            paths.versions_dir() / "version-bb-x86_64/Roblox.app/x"
+        )
         sleeper = [sys.executable, "-c", "import time; time.sleep(60)"]
         client = subprocess.Popen(sleeper + [str(program)])
         child = subprocess.Popen(sleeper + [guest])
@@ -667,7 +853,9 @@ class ProcessTests(Sandbox):
                 if len(found) == 2:
                     break
                 time.sleep(0.05)
-            self.assertEqual(found, {client.pid: "version-aa-x86_64", child.pid: "version-bb-x86_64"})
+            self.assertEqual(
+                found, {client.pid: "version-aa-x86_64", child.pid: "version-bb-x86_64"}
+            )
             self.assertEqual(processes.terminate(sorted(found)), [])
             self.assertEqual(processes.running(), {})
             self.assertIsNone(unrelated.poll())
