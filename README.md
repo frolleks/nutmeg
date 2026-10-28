@@ -2,22 +2,22 @@
 
 Nutmeg is a Roblox bootstrapper for Linux. It downloads the macOS Roblox
 client from Roblox's servers, keeps it up to date, and starts it through
-[rosemary](https://github.com/microlift/rosemary), which runs macOS programs on
+[Rosemary](https://github.com/microlift/rosemary), which runs macOS programs on
 Linux. It is written in Python with a GTK 4 and libadwaita interface.
 
-rosemary is experimental, and so is running Roblox on it. nutmeg installs and
-starts the client the way rosemary's documentation describes; whether Roblox
-then works depends on the rosemary build you use.
+Rosemary is experimental, and so is running Roblox on it. nutmeg installs and
+starts the client the way Rosemary's documentation describes; whether Roblox
+then works depends on the Rosemary build you use.
 
 ## Requirements
 
 - Linux on x86-64.
-- rosemary. rosemary's installation guide recommends getting it through
+- Rosemary. Rosemary's installation guide recommends getting it through
   [Butter](https://github.com/microlift/butter), which installs official
-  rosemary builds (it calls them runners) and lists them for nutmeg to use.
-  A rosemary on `PATH`, or one you built yourself with
+  Rosemary builds (it calls them runners) and lists them for nutmeg to use.
+  A Rosemary on `PATH`, or one you built yourself with
   `cargo build --release --bin rosemary`, also works.
-- A Vulkan driver, which rosemary's Metal uses. If you don't have a GPU that supports Vulkan, enable `Force OpenGL` in Nutmeg settings.
+- A Vulkan driver, which Rosemary's Metal uses. If you don't have a GPU that supports Vulkan, enable `Force OpenGL` in Nutmeg settings.
 - Python 3.10 or newer.
 - PyGObject, GTK 4 and libadwaita 1.5 or newer (nutmeg is tested with GTK 4.14
   and libadwaita 1.5). On Debian and Ubuntu:
@@ -57,10 +57,10 @@ leaves the Flatpak alone.
 
 The Flatpak is allowed to reach:
 
-- the network, the display (Wayland, and X11 for rosemary's X11 video
+- the network, the display (Wayland, and X11 for Rosemary's X11 video
   driver), sound and the GPU, as Butter's Flatpak is;
-- your home folder, read-only, so that it can run rosemary from wherever it
-  is: a rosemary runs files that sit beside it, which the file chooser
+- your home folder, read-only, so that it can run Rosemary from wherever it
+  is: a Rosemary runs files that sit beside it, which the file chooser
   cannot hand over one at a time;
 - Butter's runners and bottles, in `~/.local/share/butter/` and in Butter's
   Flatpak, with write access, because Roblox running in a bottle writes to
@@ -76,9 +76,9 @@ It differs from the other ways of installing nutmeg in a few ways:
 - Its settings, Roblox, the prefix and the logs are kept in
   `~/.var/app/io.github.frolleks.Nutmeg/`, so it starts with settings of its
   own.
-- For rosemary, choose one of Butter's runners, or the `bin/rosemary` of a
-  rosemary release unpacked in your home folder. Programs on your system's
-  `PATH` are outside the sandbox, and a rosemary you built yourself usually
+- For Rosemary, choose one of Butter's runners, or the `bin/rosemary` of a
+  Rosemary release unpacked in your home folder. Programs on your system's
+  `PATH` are outside the sandbox, and a Rosemary you built yourself usually
   needs a newer C library than GNOME's runtime has.
 - The Flatpak adds the menu entries and opens `roblox-player:` and `roblox:`
   links itself, so the Integration page has no Install button. If another
@@ -205,11 +205,11 @@ launch goes on with the running version, and the launch log says why.
 
 ## Setting up
 
-1. In Butter, open Runners and install a rosemary release. Skip this if
-   rosemary is on `PATH` or you built it yourself.
+1. In Butter, open Runners and install a Rosemary release. Skip this if
+   Rosemary is on `PATH` or you built it yourself.
 2. Run `nutmeg` (or `python3 -m nutmeg`) to open the settings.
-3. On the rosemary page, choose the program: one of Butter's runners, the
-   rosemary on `PATH`, or "Another program…" for any other file. Click Save.
+3. On the Rosemary page, choose the program: one of Butter's runners, the
+   Rosemary on `PATH`, or "Another program…" for any other file. Click Save.
 4. On the Integration page, click Install. This adds "Roblox (nutmeg)" and
    "nutmeg Settings" to the application menu, and makes nutmeg the handler
    for `roblox-player:` and `roblox:` links. Right-clicking "Roblox (nutmeg)"
@@ -220,9 +220,9 @@ launch goes on with the running version, and the launch log says why.
 
 After that, the Play button on roblox.com starts Roblox through nutmeg.
 
-The first launch asks whether rosemary should install its Darwin base system
-(MiniDarwin) into the prefix. rosemary downloads it from GitHub and checks it
-against hashes built into rosemary. Programs run without it, because rosemary
+The first launch asks whether Rosemary should install its Darwin base system
+(MiniDarwin) into the prefix. Rosemary downloads it from GitHub and checks it
+against hashes built into Rosemary. Programs run without it, because Rosemary
 links them against its own system libraries.
 
 ## Commands
@@ -273,7 +273,7 @@ Each launch goes through these steps.
    ```
 
    from the prefix's `root/` folder, which the client sees as `/`. The
-   `-protocolString` argument is how rosemary's `tools/install-url-handler.sh`
+   `-protocolString` argument is how Rosemary's `tools/install-url-handler.sh`
    passes a link, and the client reads it. Without a link, the client is
    started with no arguments, as it is when Roblox.app is opened on a Mac.
 
@@ -294,7 +294,7 @@ A runner is listed when its `runner.toml` names an executable that exists.
 Choosing one stores the path of that executable, such as
 `~/.local/share/butter/runners/<id>/bin/rosemary`. If
 Butter later removes the runner, the next launch says so and points to the
-settings. Butter's official builds bundle the libraries rosemary needs, so they
+settings. Butter's official builds bundle the libraries Rosemary needs, so they
 run outside the Flatpak too. A runner the Flatpak compiled from source was
 linked against the Flatpak's runtime and may not start outside it.
 
@@ -329,7 +329,7 @@ start Roblox, so Roblox does not appear in Butter's Process Manager.
 ## Settings
 
 The settings are stored in `~/.config/nutmeg/config.json`. The runtime
-options set rosemary's environment variables, which rosemary's
+options set Rosemary's environment variables, which Rosemary's
 `docs/usage.md` describes:
 
 | Setting                                    | Variable                                              |
@@ -361,14 +361,14 @@ variables". A settings file from an older nutmeg that sets
 `ROSEMARY_SCREEN_REFRESH_RATE` or `SDL_VIDEO_DRIVER` there has the value moved
 to its setting when it is loaded.
 
-rosemary has no variable for choosing between Wayland and X11. It opens its
+Rosemary has no variable for choosing between Wayland and X11. It opens its
 windows with SDL 3 and leaves the choice to SDL, so the Display server setting
 sets SDL's `SDL_VIDEO_DRIVER`. nutmeg also removes the older spelling,
 `SDL_VIDEODRIVER`, from the environment it inherits, because SDL reads it when
 `SDL_VIDEO_DRIVER` is unset. At "Default", SDL 3.4 uses Wayland when the
 compositor supports the `wp_fifo_v1` protocol and X11 otherwise, which on a
 Wayland desktop means XWayland. Choosing Wayland outside a Wayland session
-leaves rosemary unable to open a window.
+leaves Rosemary unable to open a window.
 
 The Performance settings start Roblox through other programs, found on
 `PATH`, as `gamemoderun mangohud rosemary run …`:
@@ -379,15 +379,15 @@ The Performance settings start Roblox through other programs, found on
 | Show the MangoHud overlay | `mangohud`, from [MangoHud](https://github.com/flightlessmango/MangoHud)     |
 
 Both set their variables and replace themselves with the command they are
-given, so the process nutmeg watches is still rosemary's. MangoHud draws its
-overlay through Vulkan, which rosemary's Metal runs on. If a switched-on
+given, so the process nutmeg watches is still Rosemary's. MangoHud draws its
+overlay through Vulkan, which Rosemary's Metal runs on. If a switched-on
 program is not installed, the launch stops and says so.
 
 For any other program, such as gamescope or OBS's `obs-gamecapture`, fill in
 "Wrapper command". It is written the way Steam's launch options are:
-`%command%` stands for rosemary and its arguments, and `NAME=value` words at
+`%command%` stands for Rosemary and its arguments, and `NAME=value` words at
 the start set environment variables for Roblox. Without `%command%`, the
-command goes in front of rosemary. Words after `%command%` are passed on to
+command goes in front of Rosemary. Words after `%command%` are passed on to
 Roblox. GameMode and MangoHud, when switched on, run inside the wrapper:
 
 | Wrapper command                        | Runs                                                  |
@@ -488,9 +488,9 @@ it applies.
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `~/.config/nutmeg/config.json`                                   | settings                                                                         |
 | `~/.local/share/nutmeg/versions/`                                | installed Roblox builds                                                          |
-| `~/.local/share/nutmeg/prefix/`                                  | the rosemary prefix, including Roblox's own files under `root/Users/<name>/`     |
+| `~/.local/share/nutmeg/prefix/`                                  | the Rosemary prefix, including Roblox's own files under `root/Users/<name>/`     |
 | `~/.cache/nutmeg/downloads/`                                     | downloads in progress                                                            |
-| `~/.local/state/nutmeg/logs/`                                    | one log per launch, with nutmeg's steps and everything rosemary and Roblox print |
+| `~/.local/state/nutmeg/logs/`                                    | one log per launch, with nutmeg's steps and everything Rosemary and Roblox print |
 | `~/.local/share/applications/io.github.frolleks.Nutmeg*.desktop` | the menu entries                                                                 |
 | `~/.local/share/icons/hicolor/*/apps/io.github.frolleks.Nutmeg*` | their icons                                                                      |
 
@@ -545,7 +545,7 @@ Wayland's client libraries, fontconfig, FreeType and HarfBuzz, among others).
 ## Development
 
 The tests use a local web server in place of Roblox's servers and a script in
-place of rosemary:
+place of Rosemary:
 
 ```sh
 python3 -m unittest discover -s tests
