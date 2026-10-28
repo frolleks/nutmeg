@@ -1,6 +1,6 @@
-# nutmeg
+# Nutmeg
 
-nutmeg is a Roblox bootstrapper for Linux. It downloads the macOS Roblox
+Nutmeg is a Roblox bootstrapper for Linux. It downloads the macOS Roblox
 client from Roblox's servers, keeps it up to date, and starts it through
 [rosemary](https://github.com/microlift/rosemary), which runs macOS programs on
 Linux. It is written in Python with a GTK 4 and libadwaita interface.
@@ -11,15 +11,13 @@ then works depends on the rosemary build you use.
 
 ## Requirements
 
-- Linux on x86-64 or AArch64.
+- Linux on x86-64.
 - rosemary. rosemary's installation guide recommends getting it through
   [Butter](https://github.com/microlift/butter), which installs official
   rosemary builds (it calls them runners) and lists them for nutmeg to use.
   A rosemary on `PATH`, or one you built yourself with
   `cargo build --release --bin rosemary`, also works.
-- A Vulkan driver, which rosemary's Metal uses. A rosemary you built yourself
-  also needs SDL 3.4.0 or newer (`libSDL3.so.0`); Butter's official builds
-  bring their own.
+- A Vulkan driver, which rosemary's Metal uses. If you don't have a GPU that supports Vulkan, enable `Force OpenGL` in Nutmeg settings.
 - Python 3.10 or newer.
 - PyGObject, GTK 4 and libadwaita 1.5 or newer (nutmeg is tested with GTK 4.14
   and libadwaita 1.5). On Debian and Ubuntu:
@@ -40,13 +38,12 @@ For Nix users, simply run `nix develop`.
 
 nutmeg is published on the Releases page in two kinds: releases, tagged
 `vX.Y.Z`, and nightly builds, marked as pre-releases. Each has the same
-files: a Flatpak and an AppImage for x86-64 and for ARM64, a `.pyz`, a wheel
+files: a Flatpak and an AppImage for x86-64, a `.pyz`, a wheel
 and the source.
 
 ### With Flatpak
 
-Download the `.flatpak` for your computer from the Releases page
-(`x86_64` for most PCs, `aarch64` for ARM ones) and install it:
+Download the `.flatpak` from the Releases page and install it:
 
 ```sh
 flatpak install --user nutmeg-1.2.0-x86_64.flatpak
@@ -252,9 +249,7 @@ Each launch goes through these steps.
 1. It asks `https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer`
    for the current macOS build, a name like `version-3bc33ee7ffad426f`.
 2. If that build is not installed, it downloads
-   `https://setup.rbxcdn.com/mac/<build>-RobloxPlayer.zip` (the x86_64 build)
-   or `https://setup.rbxcdn.com/mac/arm64/<build>-RobloxPlayer.zip` (the arm64
-   build), falling back to `setup-aws.rbxcdn.com` and `setup-ak.rbxcdn.com`.
+   `https://setup.rbxcdn.com/mac/<build>-RobloxPlayer.zip`, falling back to `setup-aws.rbxcdn.com` and `setup-ak.rbxcdn.com`.
    It unpacks the zip into
    `~/.local/share/nutmeg/versions/<build>-<arch>/Roblox.app`, refusing any
    path or link that would land outside that folder, and checks that the
@@ -285,12 +280,6 @@ Each launch goes through these steps.
 If Roblox's version service cannot be reached, nutmeg starts the build it
 installed last.
 
-On an x86-64 computer nutmeg installs the x86_64 build, and on AArch64 the
-arm64 build, so that rosemary runs the client natively. On AArch64 the
-settings can choose the x86_64 build instead, which rosemary recompiles with
-its Microlift emulator. rosemary cannot emulate ARM, so the arm64 build is
-refused on x86-64.
-
 nutmeg installs Roblox's public release only. When nutmeg was written, the
 version service answered HTTP 401 to requests for other channels.
 
@@ -315,19 +304,19 @@ runs with the bottle's settings, read from its `bottle.toml` at each launch.
 nutmeg turns them into variables the way Butter does for a program it starts
 in the bottle:
 
-| `bottle.toml` key | Variable |
-| ----------------- | -------- |
-| `decorations` | `ROSEMARY_DECORATIONS` |
-| `menu` | `ROSEMARY_MENU` |
-| `swap_interval` | `ROSEMARY_SWAP_INTERVAL` |
-| `prefix_home` | `ROSEMARY_PREFIX_HOME` |
-| `steam = false` | `ROSEMARY_STEAM=0` |
-| `menu_ctrl = false` | `ROSEMARY_MENU_CTRL=0` |
-| `confine_pointer = true` | `ROSEMARY_CONFINE_POINTER=1` |
-| `disable_metal = true` | `VK_DRIVER_FILES=/dev/null` |
-| `process_server = false` | `ROSEMARY_SERVER=off` |
+| `bottle.toml` key                             | Variable                                                                 |
+| --------------------------------------------- | ------------------------------------------------------------------------ |
+| `decorations`                                 | `ROSEMARY_DECORATIONS`                                                   |
+| `menu`                                        | `ROSEMARY_MENU`                                                          |
+| `swap_interval`                               | `ROSEMARY_SWAP_INTERVAL`                                                 |
+| `prefix_home`                                 | `ROSEMARY_PREFIX_HOME`                                                   |
+| `steam = false`                               | `ROSEMARY_STEAM=0`                                                       |
+| `menu_ctrl = false`                           | `ROSEMARY_MENU_CTRL=0`                                                   |
+| `confine_pointer = true`                      | `ROSEMARY_CONFINE_POINTER=1`                                             |
+| `disable_metal = true`                        | `VK_DRIVER_FILES=/dev/null`                                              |
+| `process_server = false`                      | `ROSEMARY_SERVER=off`                                                    |
 | `dead_flags`, `call_return`, `strict_imports` | `ROSEMARY_DEAD_FLAGS`, `ROSEMARY_CALL_RETURN`, `ROSEMARY_STRICT_IMPORTS` |
-| `[env]` | set as they are, after the above, so they win |
+| `[env]`                                       | set as they are, after the above, so they win                            |
 
 The bottle's `backend` also decides `rosemary run --native` or
 `--emulated`. nutmeg's own runtime, display and emulation settings, its extra
@@ -343,23 +332,23 @@ The settings are stored in `~/.config/nutmeg/config.json`. The runtime
 options set rosemary's environment variables, which rosemary's
 `docs/usage.md` describes:
 
-| Setting | Variable |
-| ------- | -------- |
-| Prefix | `ROSEMARY_PREFIX` |
-| Home folder | `ROSEMARY_PREFIX_HOME` |
-| Process server | `ROSEMARY_SERVER` (`off` when switched off) |
-| Display server | `SDL_VIDEO_DRIVER` (`wayland`, or `x11` for XWayland) |
-| Force OpenGL | `VK_DRIVER_FILES` (`/dev/null` when switched on) |
-| VSync | `ROSEMARY_SWAP_INTERVAL` |
-| Presentation mode | `ROSEMARY_METAL_PRESENTATION_MODE` |
-| Refresh rate | `ROSEMARY_SCREEN_REFRESH_RATE` |
-| Title bar | `ROSEMARY_DECORATIONS` |
-| Menus | `ROSEMARY_MENU` |
-| Control works as Command in menu shortcuts | `ROSEMARY_MENU_CTRL` |
-| Keep the pointer inside the window | `ROSEMARY_CONFINE_POINTER` |
-| Dead flag elimination | `ROSEMARY_DEAD_FLAGS` |
-| Native call return | `ROSEMARY_CALL_RETURN` |
-| Execution | `rosemary run --native` or `--emulated` |
+| Setting                                    | Variable                                              |
+| ------------------------------------------ | ----------------------------------------------------- |
+| Prefix                                     | `ROSEMARY_PREFIX`                                     |
+| Home folder                                | `ROSEMARY_PREFIX_HOME`                                |
+| Process server                             | `ROSEMARY_SERVER` (`off` when switched off)           |
+| Display server                             | `SDL_VIDEO_DRIVER` (`wayland`, or `x11` for XWayland) |
+| Force OpenGL                               | `VK_DRIVER_FILES` (`/dev/null` when switched on)      |
+| VSync                                      | `ROSEMARY_SWAP_INTERVAL`                              |
+| Presentation mode                          | `ROSEMARY_METAL_PRESENTATION_MODE`                    |
+| Refresh rate                               | `ROSEMARY_SCREEN_REFRESH_RATE`                        |
+| Title bar                                  | `ROSEMARY_DECORATIONS`                                |
+| Menus                                      | `ROSEMARY_MENU`                                       |
+| Control works as Command in menu shortcuts | `ROSEMARY_MENU_CTRL`                                  |
+| Keep the pointer inside the window         | `ROSEMARY_CONFINE_POINTER`                            |
+| Dead flag elimination                      | `ROSEMARY_DEAD_FLAGS`                                 |
+| Native call return                         | `ROSEMARY_CALL_RETURN`                                |
+| Execution                                  | `rosemary run --native` or `--emulated`               |
 
 In a Butter bottle's prefix, the bottle's settings take the place of these;
 see above. A setting left at "Default" leaves its variable unset, except Force
@@ -384,10 +373,10 @@ leaves rosemary unable to open a window.
 The Performance settings start Roblox through other programs, found on
 `PATH`, as `gamemoderun mangohud rosemary run …`:
 
-| Setting | Program |
-| ------- | ------- |
-| Run with GameMode | `gamemoderun`, from [GameMode](https://github.com/FeralInteractive/gamemode) |
-| Show the MangoHud overlay | `mangohud`, from [MangoHud](https://github.com/flightlessmango/MangoHud) |
+| Setting                   | Program                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| Run with GameMode         | `gamemoderun`, from [GameMode](https://github.com/FeralInteractive/gamemode) |
+| Show the MangoHud overlay | `mangohud`, from [MangoHud](https://github.com/flightlessmango/MangoHud)     |
 
 Both set their variables and replace themselves with the command they are
 given, so the process nutmeg watches is still rosemary's. MangoHud draws its
@@ -401,11 +390,11 @@ the start set environment variables for Roblox. Without `%command%`, the
 command goes in front of rosemary. Words after `%command%` are passed on to
 Roblox. GameMode and MangoHud, when switched on, run inside the wrapper:
 
-| Wrapper command | Runs |
-| --------------- | ---- |
-| `gamescope -f -- %command%` | `gamescope -f -- gamemoderun mangohud rosemary run …` |
-| `obs-gamecapture` | `obs-gamecapture rosemary run …` |
-| `MANGOHUD_CONFIG=fps_only=1 %command%` | `rosemary run …` with `MANGOHUD_CONFIG` set |
+| Wrapper command                        | Runs                                                  |
+| -------------------------------------- | ----------------------------------------------------- |
+| `gamescope -f -- %command%`            | `gamescope -f -- gamemoderun mangohud rosemary run …` |
+| `obs-gamecapture`                      | `obs-gamecapture rosemary run …`                      |
+| `MANGOHUD_CONFIG=fps_only=1 %command%` | `rosemary run …` with `MANGOHUD_CONFIG` set           |
 
 The words are split as a shell would split them, so quotes work, but nothing
 else a shell does: there are no pipes, `$VARIABLES` or `~`, except that a `~`
@@ -495,15 +484,15 @@ it applies.
 
 ## Files
 
-| Path | Contents |
-| ---- | -------- |
-| `~/.config/nutmeg/config.json` | settings |
-| `~/.local/share/nutmeg/versions/` | installed Roblox builds |
-| `~/.local/share/nutmeg/prefix/` | the rosemary prefix, including Roblox's own files under `root/Users/<name>/` |
-| `~/.cache/nutmeg/downloads/` | downloads in progress |
-| `~/.local/state/nutmeg/logs/` | one log per launch, with nutmeg's steps and everything rosemary and Roblox print |
-| `~/.local/share/applications/io.github.frolleks.Nutmeg*.desktop` | the menu entries |
-| `~/.local/share/icons/hicolor/*/apps/io.github.frolleks.Nutmeg*` | their icons |
+| Path                                                             | Contents                                                                         |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `~/.config/nutmeg/config.json`                                   | settings                                                                         |
+| `~/.local/share/nutmeg/versions/`                                | installed Roblox builds                                                          |
+| `~/.local/share/nutmeg/prefix/`                                  | the rosemary prefix, including Roblox's own files under `root/Users/<name>/`     |
+| `~/.cache/nutmeg/downloads/`                                     | downloads in progress                                                            |
+| `~/.local/state/nutmeg/logs/`                                    | one log per launch, with nutmeg's steps and everything rosemary and Roblox print |
+| `~/.local/share/applications/io.github.frolleks.Nutmeg*.desktop` | the menu entries                                                                 |
+| `~/.local/share/icons/hicolor/*/apps/io.github.frolleks.Nutmeg*` | their icons                                                                      |
 
 Each path follows the matching `XDG_*_HOME` variable when it is set. The logs
 hide the authentication ticket in `roblox-player:` links; the last 20 are kept.
@@ -514,51 +503,11 @@ Flatpak's own, and only Roblox's icon is written to `~/.local/share/icons/`.
 
 ## Releases and nightly builds
 
-Both kinds are built by `.github/workflows/build.yml`, which tests the commit
-under Xvfb, builds the wheel, the source archive and the `.pyz` with
-`scripts/build_nightly.py`, and builds a Flatpak for x86_64 and for aarch64
-with flatpak-builder from `flatpak/io.github.frolleks.Nutmeg.yml` and an
-AppImage for each with `scripts/build_appimage.py`, checking that each runs
-and reports the version. The tests run again on the Python and GTK each
-AppImage carries. The publishing job then writes `SHA256SUMS` for all of
-them. The steps the workflows share, such as naming
-a build and writing its notes, are in `scripts/release.py`.
-
-### Releases
-
-`.github/workflows/release.yml` runs on every push to `main`. When one of the
-pushed commits says "version bump" in its message (in any case), it releases
-that commit: the version in `nutmeg/__init__.py` there becomes the release,
-tagged `vX.Y.Z` and titled "nutmeg X.Y.Z", marked as the latest release. Its
-notes list the commits since the previous release, with a link comparing the
-two. So, to release 1.2.0:
-
-```sh
-# set __version__ = "1.2.0" in nutmeg/__init__.py, then
-git commit -am "Version bump to 1.2.0"
-git push
-```
-
-The workflow stops without releasing when that version is not a plain
-release version (such as `1.2.3`), is already released, or is not newer than
-the latest release.
+A new release is published when there's a bump version commit. Otherwise, there are also nightly builds that builds, you guessed it, every night.
 
 ### Nightly builds
 
-`.github/workflows/nightly.yml` runs every day at 23:41 UTC. If the default
-branch has commits that are not in a nightly release yet, it builds them and
-publishes them on the Releases page as a pre-release. A day without new
-commits publishes nothing.
-
-A nightly build's version is the one in `nutmeg/__init__.py` followed by
-`.devYYYYMMDDHHMM`. Once that version is released, nightly builds take the
-version after the latest release instead (after 1.2.0, `1.0.1.devYYYYMMDDHHMM`),
-so that they are newer than the release they follow. The tag is
-`nightly-YYYYMMDD-HHMM`, from the build time in UTC. The notes list the
-commits since the previous nightly.
-
-The workflow can also be started from the Actions tab. Its `force` option
-builds even when the newest commit already has a nightly.
+`.github/workflows/nightly.yml` runs every day at 23:41 UTC.
 
 ### Building locally
 
