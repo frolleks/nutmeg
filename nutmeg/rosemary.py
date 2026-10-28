@@ -159,7 +159,9 @@ def _run_captured(
             stderr=subprocess.STDOUT,
         )
     except OSError as e:
-        raise NutmegError(f"Could not run {argv[0]}: {e.strerror}", settings=True) from e
+        raise NutmegError(
+            f"Could not run {argv[0]}: {e.strerror}", settings=True
+        ) from e
     # A cancel kills the command; the read loop below then sees end of file.
     watcher_done = threading.Event()
 
@@ -215,7 +217,8 @@ def create_prefix(
     code = _run_captured(argv, env, keep, cancel)
     if code != 0:
         raise NutmegError(
-            f"rosemary could not create the prefix (exit status {code}):\n" + "\n".join(last)
+            f"rosemary could not create the prefix (exit status {code}):\n"
+            + "\n".join(last)
         )
 
 
@@ -229,7 +232,10 @@ def repair_prefix(
 
 
 def stop_server(
-    rosemary: Path, config: Config, output: Callable[[str], None], cancel: threading.Event
+    rosemary: Path,
+    config: Config,
+    output: Callable[[str], None],
+    cancel: threading.Event,
 ) -> int:
     """`rosemary server --stop`, which asks the prefix's process server to
     exit, as Butter's Stop button does. Returns the exit status, which is not
@@ -264,7 +270,7 @@ def run_env(config: Config, base: dict[str, str] | None = None) -> dict[str, str
     if config.menu:
         env["ROSEMARY_MENU"] = config.menu
     if not config.menu_ctrl:
-        env["ROSEMARY_MENU_CTRL"] = "0"
+        env["ROSEMARY_CONTROL_EDIT_KEYS"] = "0"
     if config.confine_pointer:
         env["ROSEMARY_CONFINE_POINTER"] = "1"
     if config.dead_flags:

@@ -40,7 +40,7 @@ MANAGED_ENV = {
     "ROSEMARY_SWAP_INTERVAL": "VSync",
     "ROSEMARY_DECORATIONS": "Title bar",
     "ROSEMARY_MENU": "Menu placement",
-    "ROSEMARY_MENU_CTRL": "Control as Command",
+    "ROSEMARY_CONTROL_EDIT_KEYS": "Control as Command",
     "ROSEMARY_CONFINE_POINTER": "Confine pointer",
     "ROSEMARY_DEAD_FLAGS": "Dead flag elimination",
     "ROSEMARY_CALL_RETURN": "Native call return",
@@ -84,10 +84,14 @@ def parse_wrapper(text: str) -> WrapperCommand:
     while words and "=" in words[0] and _ENV_NAME.match(words[0].split("=", 1)[0]):
         name, value = words.pop(0).split("=", 1)
         if name in MANAGED_ENV:
-            raise ConfigError(f"the wrapper command sets {name}, which the {MANAGED_ENV[name]} setting sets instead")
+            raise ConfigError(
+                f"the wrapper command sets {name}, which the {MANAGED_ENV[name]} setting sets instead"
+            )
         env[name] = value
     if any(COMMAND in word and word != COMMAND for word in words):
-        raise ConfigError(f"write {COMMAND} in the wrapper command as a word of its own")
+        raise ConfigError(
+            f"write {COMMAND} in the wrapper command as a word of its own"
+        )
     if words.count(COMMAND) > 1:
         raise ConfigError(f"the wrapper command has {COMMAND} more than once")
     if COMMAND in words:
@@ -114,7 +118,10 @@ def _refresh_rate_ok(value: str) -> bool:
 # moves to the setting, read the way rosemary reads the variable, so that the
 # file still loads and Roblox runs as it did.
 _ADOPTED_ENV = {
-    "ROSEMARY_PREFIX_HOME": ("prefix_home", lambda v: "host" if v == "host" else "prefix"),
+    "ROSEMARY_PREFIX_HOME": (
+        "prefix_home",
+        lambda v: "host" if v == "host" else "prefix",
+    ),
     "ROSEMARY_SERVER": ("process_server", lambda v: v not in ("off", "0", "false")),
     "ROSEMARY_METAL_PRESENTATION_MODE": (
         "metal_presentation_mode",
@@ -124,8 +131,14 @@ _ADOPTED_ENV = {
         "screen_refresh_rate",
         lambda v: v.strip() if _refresh_rate_ok(v) else "",
     ),
-    "SDL_VIDEO_DRIVER": ("video_driver", lambda v: v.strip().lower() if v.strip().lower() in VIDEO_DRIVERS else ""),
-    "SDL_VIDEODRIVER": ("video_driver", lambda v: v.strip().lower() if v.strip().lower() in VIDEO_DRIVERS else ""),
+    "SDL_VIDEO_DRIVER": (
+        "video_driver",
+        lambda v: v.strip().lower() if v.strip().lower() in VIDEO_DRIVERS else "",
+    ),
+    "SDL_VIDEODRIVER": (
+        "video_driver",
+        lambda v: v.strip().lower() if v.strip().lower() in VIDEO_DRIVERS else "",
+    ),
 }
 
 
@@ -195,7 +208,9 @@ class Config:
         }
         for name, allowed in choices.items():
             if getattr(self, name) not in allowed:
-                problems.append(f"{name} must be one of {', '.join(map(repr, allowed))}")
+                problems.append(
+                    f"{name} must be one of {', '.join(map(repr, allowed))}"
+                )
         for name in (
             "menu_ctrl",
             "confine_pointer",
@@ -228,7 +243,9 @@ class Config:
                 if not _ENV_NAME.match(key):
                     problems.append(f"{key!r} is not a valid environment variable name")
                 elif key in MANAGED_ENV:
-                    problems.append(f"{key} is set by the {MANAGED_ENV[key]} setting instead")
+                    problems.append(
+                        f"{key} is set by the {MANAGED_ENV[key]} setting instead"
+                    )
                 if not isinstance(value, str):
                     problems.append(f"the value of {key} must be a string")
                 elif "\0" in value:

@@ -16,8 +16,8 @@ it, so that Roblox is started as Butter would start a program in the bottle.
 
 from __future__ import annotations
 
-import re
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -38,7 +38,9 @@ class Runner:
     flatpak: bool
 
     def label(self) -> str:
-        return f"{self.name} (Butter Flatpak)" if self.flatpak else f"{self.name} (Butter)"
+        return (
+            f"{self.name} (Butter Flatpak)" if self.flatpak else f"{self.name} (Butter)"
+        )
 
 
 # How Butter stores each bottle setting that becomes a variable, and the value
@@ -46,15 +48,21 @@ class Runner:
 # unset. These follow the `choice!` enums in Butter's src/bottle.rs.
 _CHOICES = {
     "decorations": ("ROSEMARY_DECORATIONS", {"server": "server"}),
-    "menu": ("ROSEMARY_MENU", {"titlebar": "titlebar", "strip": "strip", "hidden": "none"}),
-    "swap_interval": ("ROSEMARY_SWAP_INTERVAL", {"immediate": "0", "vsync": "1", "adaptive": "-1"}),
+    "menu": (
+        "ROSEMARY_MENU",
+        {"titlebar": "titlebar", "strip": "strip", "hidden": "none"},
+    ),
+    "swap_interval": (
+        "ROSEMARY_SWAP_INTERVAL",
+        {"immediate": "0", "vsync": "1", "adaptive": "-1"},
+    ),
     "prefix_home": ("ROSEMARY_PREFIX_HOME", {"host": "host"}),
 }
 # Switches: Butter's default, the variable, and its value when the switch is
 # not at the default.
 _SWITCHES = {
     "steam": (True, "ROSEMARY_STEAM", "0"),
-    "menu_ctrl": (True, "ROSEMARY_MENU_CTRL", "0"),
+    "menu_ctrl": (True, "ROSEMARY_CONTROL_EDIT_KEYS", "0"),
     "confine_pointer": (False, "ROSEMARY_CONFINE_POINTER", "1"),
     "disable_metal": (False, "VK_DRIVER_FILES", "/dev/null"),
     "process_server": (True, "ROSEMARY_SERVER", "off"),
@@ -75,7 +83,11 @@ class Bottle:
     settings: dict = field(default_factory=dict, compare=False, repr=False)
 
     def label(self) -> str:
-        return f"{self.name} (Butter Flatpak bottle)" if self.flatpak else f"{self.name} (Butter bottle)"
+        return (
+            f"{self.name} (Butter Flatpak bottle)"
+            if self.flatpak
+            else f"{self.name} (Butter bottle)"
+        )
 
     def environment(self) -> dict[str, str]:
         """The variables Butter runs this bottle's programs with: its
@@ -118,7 +130,16 @@ _KEY = re.compile(
 )
 _TABLE = re.compile(r"^\[\s*([A-Za-z0-9_-]+)\s*\]\s*(?:#.*)?$")
 _ESCAPE = re.compile(r"\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8})|(.))")
-_ESCAPES = {"b": "\b", "t": "\t", "n": "\n", "f": "\f", "r": "\r", "e": "\x1b", '"': '"', "\\": "\\"}
+_ESCAPES = {
+    "b": "\b",
+    "t": "\t",
+    "n": "\n",
+    "f": "\f",
+    "r": "\r",
+    "e": "\x1b",
+    '"': '"',
+    "\\": "\\",
+}
 
 
 def _unescape(match: re.Match) -> str:
@@ -238,7 +259,10 @@ def bottles() -> list[Bottle]:
     for data, flatpak in data_dirs():
         for directory in _subdirectories(data / "bottles"):
             bottle = _bottle(directory, flatpak)
-            if bottle is not None and (bottle.prefix / ".rosemary/state.yaml").is_file():
+            if (
+                bottle is not None
+                and (bottle.prefix / ".rosemary/state.yaml").is_file()
+            ):
                 found.append(bottle)
     found.sort(key=lambda b: (b.name.lower(), b.flatpak))
     return found
@@ -249,7 +273,9 @@ def _bottle(directory: Path, flatpak: bool) -> Bottle | None:
     name = _text(settings.get("name"))
     if not name:
         return None
-    return Bottle(name=name, prefix=directory / "prefix", flatpak=flatpak, settings=settings)
+    return Bottle(
+        name=name, prefix=directory / "prefix", flatpak=flatpak, settings=settings
+    )
 
 
 def bottle_for_prefix(prefix: Path) -> Bottle | None:
