@@ -46,7 +46,7 @@ and the source.
 Download the `.flatpak` from the Releases page and install it:
 
 ```sh
-flatpak install --user nutmeg-1.2.0-x86_64.flatpak
+flatpak install --user nutmeg-1.2.1-x86_64.flatpak
 ```
 
 Flatpak offers to install GNOME's runtime from Flathub with it. Then open
@@ -118,9 +118,9 @@ stay, make it executable and run it:
 
 ```sh
 mkdir -p ~/Applications
-mv ~/Downloads/nutmeg-1.2.0-x86_64.AppImage ~/Applications/
-chmod +x ~/Applications/nutmeg-1.2.0-x86_64.AppImage
-~/Applications/nutmeg-1.2.0-x86_64.AppImage
+mv ~/Downloads/nutmeg-1.2.1-x86_64.AppImage ~/Applications/
+chmod +x ~/Applications/nutmeg-1.2.1-x86_64.AppImage
+~/Applications/nutmeg-1.2.1-x86_64.AppImage
 ```
 
 It opens the settings window; carry on with Setting up below. The menu
@@ -138,8 +138,8 @@ so `--version` tells which version it is. To remove it, take the menu entries
 out first, then delete the file:
 
 ```sh
-~/Applications/nutmeg-1.2.0-x86_64.AppImage uninstall-desktop
-rm ~/Applications/nutmeg-1.2.0-x86_64.AppImage
+~/Applications/nutmeg-1.2.1-x86_64.AppImage uninstall-desktop
+rm ~/Applications/nutmeg-1.2.1-x86_64.AppImage
 ```
 
 ### Without Flatpak or AppImage
@@ -163,11 +163,11 @@ The `.pyz` file on the Releases page runs as it is, with the system's
 Python and PyGObject:
 
 ```sh
-python3 nutmeg-1.2.0.pyz
+python3 nutmeg-1.2.1.pyz
 ```
 
 The wheel there installs with pipx in the same way:
-`pipx install --system-site-packages ./nutmeg-1.2.0-py3-none-any.whl`.
+`pipx install --system-site-packages ./nutmeg-1.2.1-py3-none-any.whl`.
 Both keep themselves up to date (see Updating nutmeg below).
 
 ## Updating nutmeg
