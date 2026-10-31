@@ -3,11 +3,7 @@
 Nutmeg is a Roblox bootstrapper for Linux. It downloads the macOS Roblox
 client from Roblox's servers, keeps it up to date, and starts it through
 [Rosemary](https://github.com/microlift/rosemary), which runs macOS programs on
-Linux. It is written in Python with a GTK 4 and libadwaita interface.
-
-Rosemary is experimental, and so is running Roblox on it. nutmeg installs and
-starts the client the way Rosemary's documentation describes; whether Roblox
-then works depends on the Rosemary build you use.
+Linux. It is written in Python with a GTK 4 interface.
 
 ## Requirements
 
@@ -15,8 +11,7 @@ then works depends on the Rosemary build you use.
 - Rosemary. Rosemary's installation guide recommends getting it through
   [Butter](https://github.com/microlift/butter), which installs official
   Rosemary builds (it calls them runners) and lists them for nutmeg to use.
-  A Rosemary on `PATH`, or one you built yourself with
-  `cargo build --release --bin rosemary`, also works.
+  A Rosemary on `PATH`, or one you built yourself, also works.
 - A Vulkan driver, which Rosemary's Metal uses. If you don't have a GPU that supports Vulkan, enable `Force OpenGL` in Nutmeg settings.
 - Python 3.10 or newer.
 - PyGObject, GTK 4 and libadwaita 1.5 or newer (nutmeg is tested with GTK 4.14
@@ -25,10 +20,6 @@ then works depends on the Rosemary build you use.
   `sudo dnf install python3-gobject gtk4 libadwaita`. On Arch Linux:
   `sudo pacman -S python-gobject gtk4 libadwaita`.
 - xdg-utils, so that nutmeg can open `roblox-player:` links from the browser.
-
-The Flatpak needs none of the Python, PyGObject and xdg-utils parts, and the
-AppImage none of the Python and PyGObject ones: each brings its own (see
-Installing below).
 
 ## Nix development environment
 
@@ -49,27 +40,11 @@ Download the `.flatpak` from the Releases page and install it:
 flatpak install --user nutmeg-1.2.1-x86_64.flatpak
 ```
 
-Flatpak offers to install GNOME's runtime from Flathub with it. Then open
-"nutmeg Settings" from the application menu, or run
+Open "nutmeg Settings" from the application menu, or run
 `flatpak run io.github.frolleks.Nutmeg`, and carry on with Setting up below.
-To update, install a newer `.flatpak` the same way; nutmeg's own updater
+
+**IMPORTANT:** To update, install a newer `.flatpak` the same way; nutmeg's own updater
 leaves the Flatpak alone.
-
-The Flatpak is allowed to reach:
-
-- the network, the display (Wayland, and X11 for Rosemary's X11 video
-  driver), sound and the GPU, as Butter's Flatpak is;
-- your home folder, read-only, so that it can run Rosemary from wherever it
-  is: a Rosemary runs files that sit beside it, which the file chooser
-  cannot hand over one at a time;
-- Butter's runners and bottles, in `~/.local/share/butter/` and in Butter's
-  Flatpak, with write access, because Roblox running in a bottle writes to
-  the bottle's prefix;
-- `~/.local/share/icons/hicolor/`, to give the Roblox menu entry Roblox's
-  icon, which is copied out of the installed client and so cannot be shipped
-  with the Flatpak;
-- the Discord app's socket, for showing your game on Discord: Discord's own,
-  its Snap's, and the Discord and Discord Canary Flatpaks'.
 
 It differs from the other ways of installing nutmeg in a few ways:
 
@@ -94,9 +69,8 @@ It differs from the other ways of installing nutmeg in a few ways:
 - A prefix outside nutmeg's folder, the "Your home folder" setting for the
   guest's home, or another Discord client's socket need more access, which
   `flatpak override` gives, for example
-  `flatpak override --user --filesystem=home io.github.frolleks.Nutmeg`.
-- Each `flatpak run` is a sandbox of its own, which cannot see the processes
-  of another. While Roblox runs, the `nutmeg watch` beside it (see Discord
+  `flatpak override --user --filesystem=home io.github.frolleks.Nutmeg`. Or, you can use Flatseal.
+- While Roblox runs, the `nutmeg watch` beside it (see Discord
   below) answers the other sandboxes, so that a launch from a link can still
   find and close the Roblox an earlier launch started.
 
@@ -110,10 +84,7 @@ flatpak uninstall io.github.frolleks.Nutmeg
 
 ### With the AppImage
 
-The AppImage carries its own Python, PyGObject, GTK 4 and libadwaita, from Ubuntu 24.04,
-so it runs on distributions with glibc 2.39 or newer: Ubuntu 24.04, Debian 13,
-Fedora 40 and later ones. On older ones, use the Flatpak. Download the
-`.AppImage` for your computer from the Releases page, put it somewhere it can
+Download the `.AppImage` for your computer from the Releases page, put it somewhere it can
 stay, make it executable and run it:
 
 ```sh
