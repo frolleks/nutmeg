@@ -399,8 +399,9 @@ class SettingsWindow(Adw.ApplicationWindow):
             ],
             "ROSEMARY_MENU. With the window manager's title bar, menus go in a row below it.",
         )
-        self._menu_ctrl = _switch(
-            "Control works as Command in menu shortcuts", "ROSEMARY_CONTROL_EDIT_KEYS"
+        self._control_edit_keys = _switch(
+            "Control works as Command in editing shortcuts",
+            "ROSEMARY_CONTROL_EDIT_KEYS. Select all, copy, paste, cut, undo and redo.",
         )
         self._confine = _switch(
             "Keep the pointer inside the window", "ROSEMARY_CONFINE_POINTER"
@@ -500,7 +501,7 @@ class SettingsWindow(Adw.ApplicationWindow):
                 [
                     self._decorations.widget,
                     self._menu.widget,
-                    self._menu_ctrl,
+                    self._control_edit_keys,
                     self._confine,
                 ],
                 "These set rosemary's environment variables, described in its docs/usage.md.",
@@ -650,7 +651,7 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._swap.set(config.swap_interval)
         self._decorations.set(config.decorations)
         self._menu.set(config.menu)
-        self._menu_ctrl.set_active(config.menu_ctrl)
+        self._control_edit_keys.set_active(config.control_edit_keys)
         self._confine.set_active(config.confine_pointer)
         self._gamemode.set_active(config.use_gamemode)
         self._mangohud.set_active(config.use_mangohud)
@@ -678,7 +679,7 @@ class SettingsWindow(Adw.ApplicationWindow):
             swap_interval=self._swap.get(),
             decorations=self._decorations.get(),
             menu=self._menu.get(),
-            menu_ctrl=self._menu_ctrl.get_active(),
+            control_edit_keys=self._control_edit_keys.get_active(),
             confine_pointer=self._confine.get_active(),
             use_gamemode=self._gamemode.get_active(),
             use_mangohud=self._mangohud.get_active(),

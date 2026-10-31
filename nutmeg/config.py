@@ -123,6 +123,7 @@ _ADOPTED_ENV = {
         lambda v: "host" if v == "host" else "prefix",
     ),
     "ROSEMARY_SERVER": ("process_server", lambda v: v not in ("off", "0", "false")),
+    "ROSEMARY_CONTROL_EDIT_KEYS": ("control_edit_keys", lambda v: v != "0"),
     "ROSEMARY_METAL_PRESENTATION_MODE": (
         "metal_presentation_mode",
         lambda v: v if v in PRESENTATION_MODES else "",
@@ -155,7 +156,7 @@ class Config:
     swap_interval: str = ""
     decorations: str = ""
     menu: str = ""
-    menu_ctrl: bool = True
+    control_edit_keys: bool = False
     confine_pointer: bool = False
     dead_flags: bool = False
     call_return: bool = False
@@ -212,7 +213,7 @@ class Config:
                     f"{name} must be one of {', '.join(map(repr, allowed))}"
                 )
         for name in (
-            "menu_ctrl",
+            "control_edit_keys",
             "confine_pointer",
             "dead_flags",
             "call_return",

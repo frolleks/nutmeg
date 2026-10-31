@@ -332,23 +332,23 @@ The settings are stored in `~/.config/nutmeg/config.json`. The runtime
 options set Rosemary's environment variables, which Rosemary's
 `docs/usage.md` describes:
 
-| Setting                                    | Variable                                              |
-| ------------------------------------------ | ----------------------------------------------------- |
-| Prefix                                     | `ROSEMARY_PREFIX`                                     |
-| Home folder                                | `ROSEMARY_PREFIX_HOME`                                |
-| Process server                             | `ROSEMARY_SERVER` (`off` when switched off)           |
-| Display server                             | `SDL_VIDEO_DRIVER` (`wayland`, or `x11` for XWayland) |
-| Force OpenGL                               | `VK_DRIVER_FILES` (`/dev/null` when switched on)      |
-| VSync                                      | `ROSEMARY_SWAP_INTERVAL`                              |
-| Presentation mode                          | `ROSEMARY_METAL_PRESENTATION_MODE`                    |
-| Refresh rate                               | `ROSEMARY_SCREEN_REFRESH_RATE`                        |
-| Title bar                                  | `ROSEMARY_DECORATIONS`                                |
-| Menus                                      | `ROSEMARY_MENU`                                       |
-| Control works as Command in menu shortcuts | `ROSEMARY_CONTROL_EDIT_KEYS`                          |
-| Keep the pointer inside the window         | `ROSEMARY_CONFINE_POINTER`                            |
-| Dead flag elimination                      | `ROSEMARY_DEAD_FLAGS`                                 |
-| Native call return                         | `ROSEMARY_CALL_RETURN`                                |
-| Execution                                  | `rosemary run --native` or `--emulated`               |
+| Setting                                       | Variable                                              |
+| --------------------------------------------- | ----------------------------------------------------- |
+| Prefix                                        | `ROSEMARY_PREFIX`                                     |
+| Home folder                                   | `ROSEMARY_PREFIX_HOME`                                |
+| Process server                                | `ROSEMARY_SERVER` (`off` when switched off)           |
+| Display server                                | `SDL_VIDEO_DRIVER` (`wayland`, or `x11` for XWayland) |
+| Force OpenGL                                  | `VK_DRIVER_FILES` (`/dev/null` when switched on)      |
+| VSync                                         | `ROSEMARY_SWAP_INTERVAL`                              |
+| Presentation mode                             | `ROSEMARY_METAL_PRESENTATION_MODE`                    |
+| Refresh rate                                  | `ROSEMARY_SCREEN_REFRESH_RATE`                        |
+| Title bar                                     | `ROSEMARY_DECORATIONS`                                |
+| Menus                                         | `ROSEMARY_MENU`                                       |
+| Control works as Command in editing shortcuts | `ROSEMARY_CONTROL_EDIT_KEYS` (`1` when switched on)   |
+| Keep the pointer inside the window            | `ROSEMARY_CONFINE_POINTER`                            |
+| Dead flag elimination                         | `ROSEMARY_DEAD_FLAGS`                                 |
+| Native call return                            | `ROSEMARY_CALL_RETURN`                                |
+| Execution                                     | `rosemary run --native` or `--emulated`               |
 
 In a Butter bottle's prefix, the bottle's settings take the place of these;
 see above. A setting left at "Default" leaves its variable unset, except Force
@@ -357,8 +357,9 @@ removes the variables the other settings control from the environment it
 inherits, so those settings are the only place they come from. Any other
 variable can be added under "Extra environment
 variables". A settings file from an older nutmeg that sets
-`ROSEMARY_PREFIX_HOME`, `ROSEMARY_SERVER`, `ROSEMARY_METAL_PRESENTATION_MODE`,
-`ROSEMARY_SCREEN_REFRESH_RATE` or `SDL_VIDEO_DRIVER` there has the value moved
+`ROSEMARY_PREFIX_HOME`, `ROSEMARY_SERVER`, `ROSEMARY_CONTROL_EDIT_KEYS`,
+`ROSEMARY_METAL_PRESENTATION_MODE`, `ROSEMARY_SCREEN_REFRESH_RATE` or
+`SDL_VIDEO_DRIVER` there has the value moved
 to its setting when it is loaded.
 
 Rosemary has no variable for choosing between Wayland and X11. It opens its

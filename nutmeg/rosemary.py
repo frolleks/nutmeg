@@ -269,8 +269,8 @@ def run_env(config: Config, base: dict[str, str] | None = None) -> dict[str, str
         env["ROSEMARY_DECORATIONS"] = config.decorations
     if config.menu:
         env["ROSEMARY_MENU"] = config.menu
-    if not config.menu_ctrl:
-        env["ROSEMARY_CONTROL_EDIT_KEYS"] = "0"
+    if config.control_edit_keys:
+        env["ROSEMARY_CONTROL_EDIT_KEYS"] = "1"
     if config.confine_pointer:
         env["ROSEMARY_CONFINE_POINTER"] = "1"
     if config.dead_flags:

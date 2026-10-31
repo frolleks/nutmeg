@@ -168,7 +168,7 @@ class ConfigTests(Sandbox):
             prefix_path="~/prefixes/roblox",
             architecture="x86_64",
             swap_interval="0",
-            menu_ctrl=False,
+            control_edit_keys=True,
             extra_env={"RUST_LOG": "debug", "A": "b=c"},
             fast_flags={"FFlagExample": True},
         )
@@ -181,7 +181,7 @@ class ConfigTests(Sandbox):
             {"architecture": "ppc"},
             {"engine": "fast"},
             {"swap_interval": "2"},
-            {"menu_ctrl": "yes"},
+            {"control_edit_keys": "yes"},
             {"prefix_path": "relative/prefix"},
             {"extra_env": {"ROSEMARY_PREFIX": "/x"}},
             {"extra_env": {"1BAD": "x"}},
@@ -247,6 +247,7 @@ class ConfigTests(Sandbox):
                 "extra_env": {
                     "ROSEMARY_PREFIX_HOME": "host",
                     "ROSEMARY_SERVER": "0",
+                    "ROSEMARY_CONTROL_EDIT_KEYS": "1",
                     "ROSEMARY_METAL_PRESENTATION_MODE": "fifo",
                     "ROSEMARY_SCREEN_REFRESH_RATE": " 59.94 ",
                     "RUST_LOG": "debug",
@@ -255,6 +256,7 @@ class ConfigTests(Sandbox):
         )
         self.assertEqual(config.prefix_home, "host")
         self.assertFalse(config.process_server)
+        self.assertTrue(config.control_edit_keys)
         self.assertEqual(config.metal_presentation_mode, "fifo")
         self.assertEqual(config.screen_refresh_rate, "59.94")
         self.assertEqual(config.extra_env, {"RUST_LOG": "debug"})
@@ -291,6 +293,13 @@ class ConfigTests(Sandbox):
 
     def test_unknown_keys_are_ignored(self):
         self.assertEqual(Config.from_dict({"future_setting": 1}), Config())
+
+    def test_old_menu_ctrl_does_not_turn_on_control_edit_keys(self):
+        # Every file saved before the rename has `"menu_ctrl": true`, the
+        # default of a setting that rosemary no longer reads.
+        config = Config.from_dict({"menu_ctrl": True})
+        self.assertFalse(config.control_edit_keys)
+        self.assertNotIn("ROSEMARY_CONTROL_EDIT_KEYS", rosemary.run_env(config, {}))
 
 
 class MachOTests(Sandbox):
@@ -484,7 +493,7 @@ class RosemaryTests(Sandbox):
             swap_interval="-1",
             decorations="server",
             menu="strip",
-            menu_ctrl=False,
+            control_edit_keys=True,
             confine_pointer=True,
             dead_flags=True,
             call_return=True,
@@ -503,7 +512,7 @@ class RosemaryTests(Sandbox):
                 "ROSEMARY_SWAP_INTERVAL": "-1",
                 "ROSEMARY_DECORATIONS": "server",
                 "ROSEMARY_MENU": "strip",
-                "ROSEMARY_CONTROL_EDIT_KEYS": "0",
+                "ROSEMARY_CONTROL_EDIT_KEYS": "1",
                 "ROSEMARY_CONFINE_POINTER": "1",
                 "ROSEMARY_DEAD_FLAGS": "1",
                 "ROSEMARY_CALL_RETURN": "1",
