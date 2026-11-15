@@ -1,3 +1,6 @@
+> [!WARNING]
+> This project is no longer maintained. I've moved on to work on [Quadra](https://quadrahq.org). Try it out!
+
 # Nutmeg
 
 Nutmeg is a Roblox bootstrapper for Linux. It downloads the macOS Roblox
